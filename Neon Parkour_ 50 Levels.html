@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neon Parkour: 50 Levels</title>
+<style>
+/* Minimalist dark retro look (intentionally dark in every theme) */
+:root{--bg:#07070f;--panel:#10101e;--fg:#e8e8ff;--mute:#7a7aa0;--easy:#4cf;--med:#fb3;--hard:#f4a;color-scheme:dark;box-sizing:border-box;
+ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:"Courier New",monospace}
+main{max-width:760px;margin:0 auto;padding:16px;text-align:center}
+h1{letter-spacing:.2em;text-transform:uppercase;font-size:24px;margin:8px 0}
+p{color:var(--mute);font-size:13px}
+button{font:inherit;color:var(--fg);background:var(--panel);border:2px solid #334;padding:8px 12px;cursor:pointer}
+button:disabled{opacity:.35;cursor:not-allowed}
+#map{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:14px 0}
+#map button{padding:8px 0;font-weight:bold;font-size:14px;border-width:2px}
+#map small{display:block;font-size:9px;color:var(--mute);font-weight:normal;min-height:11px}
+@media(max-width:560px){#map{grid-template-columns:repeat(5,1fr)}}
+#game{position:relative;max-width:900px;margin:0 auto}
+canvas{display:block;width:100%;image-rendering:pixelated;border:3px solid #334;background:#000;touch-action:none}
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#000b}
+#ov[hidden]{display:none}
+.bar{display:flex;gap:8px;justify-content:center;margin:6px 0}
+#shop{border:2px solid #334;background:var(--panel);padding:8px;margin:8px 0}
+input.volr{width:130px;accent-color:#4cf;vertical-align:middle}
+#adm,#adv{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:#000c}
+#adm[hidden]{display:none}
+.admbox{background:var(--panel);border:2px solid #4cf;padding:16px;min-width:280px;max-width:92vw;max-height:92vh;overflow:auto;text-align:center}
+.admbox pre{text-align:left;font-size:12px;margin:8px 0;white-space:pre-wrap}
+.admbox input{font:inherit;color:inherit;background:#000;border:2px solid #334;padding:6px}
+.bar{align-items:center}
+#touch{display:none;justify-content:space-between;padding:8px}
+#touch div{display:flex;gap:8px}#touch button{width:64px;height:56px;font-size:20px;user-select:none;touch-action:none}
+/* ===== Polished interface ===== */
+body{background:radial-gradient(ellipse at 50% -10%,#1b1b4a 0%,#07070f 62%) fixed}
+main{max-width:860px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+.logo{font-size:26px;font-weight:bold;letter-spacing:.18em;text-align:left;line-height:1;text-shadow:0 0 14px #4cf8}.logo b{color:#4cf}
+.logo small{display:block;font-size:10px;letter-spacing:.3em;color:var(--mute);margin-top:6px;text-shadow:none;font-weight:normal}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:linear-gradient(#1a1a38,#0e0e22);border:1px solid #2c2c5c;border-radius:20px;padding:6px 12px;font-size:13px}
+#pts{color:#fd3}
+.prog{height:6px;background:#15152e;border-radius:4px;overflow:hidden;margin-bottom:12px}.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4cf,#fb3,#f4a);transition:width .4s}
+.tabs{display:flex;gap:6px}.tab{flex:1;border-radius:10px 10px 0 0;border-bottom:3px solid transparent;background:#0e0e22}
+.tab.on{background:linear-gradient(#202048,#12122a);border-color:#2c2c5c;border-bottom-color:#4cf;box-shadow:0 -4px 14px #4cf2}
+.pane{background:linear-gradient(#12122a,#0b0b1c);border:1px solid #23234a;border-radius:0 0 12px 12px;padding:14px;box-shadow:0 10px 30px #0008;text-align:left}
+.pane[hidden]{display:none}
+button{border-radius:8px;border:1px solid #33336a;background:linear-gradient(#1e1e42,#12122a);box-shadow:0 2px 0 #000a;transition:transform .08s,box-shadow .15s,border-color .15s}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px #4cf3;border-color:#4cf}
+button:active:not(:disabled){transform:translateY(1px)}
+.note{background:#0c0c20;border-left:3px solid #4cf;padding:8px 10px;border-radius:4px;color:#aab;margin:0 0 14px}
+#map{display:block;margin:0}
+.sec{margin-bottom:16px}.sec h3{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font-size:15px;letter-spacing:.15em}
+.sec h3 small{color:var(--mute);letter-spacing:0;font-weight:normal;font-size:11px}.sec h3 em{margin-left:auto;font-style:normal;color:#aab;font-size:12px;letter-spacing:0}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}@media(min-width:600px){.grid5{grid-template-columns:repeat(8,1fr)}}
+#map .lv{height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border:1px solid color-mix(in srgb,var(--c) 45%,#222);border-top:3px solid var(--c);background:linear-gradient(#1c1c3c,#0f0f24)}
+#map .lv .no{font-size:16px;font-weight:bold}#map .lv small{font-size:10px;color:var(--mute);min-height:12px}
+#map .lv.done{background:linear-gradient(color-mix(in srgb,var(--c) 22%,#14142c),#0f0f24)}#map .lv.done small{color:var(--c)}
+#map .lv.boss{border:2px solid #fd3;border-top-width:3px;box-shadow:0 0 12px #fd34}
+#map .lv:disabled{opacity:.4;filter:grayscale(.6)}
+#shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;border:0;background:none;padding:0;margin:0}
+#shop .sk{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,#222)}
+#shop .sk.on{border-color:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 40%,transparent)}
+#shop .sk small{font-size:11px;color:var(--mute);min-height:26px;text-align:center}
+.sw{display:block;width:26px;height:38px;border-radius:4px;box-shadow:inset 0 8px 0 var(--t,#fff),0 0 10px #0008}
+.sw.rb{animation:rb 2.4s linear infinite}@keyframes rb{to{filter:hue-rotate(360deg)}}
+.set{background:#0c0c20;border:1px solid #23234a;border-radius:10px;padding:12px;margin-bottom:10px}.set h3{margin:0 0 8px;font-size:13px;letter-spacing:.15em;color:#4cf}
+.keys{width:100%;border-collapse:collapse;font-size:13px}.keys td{padding:5px 6px;border-bottom:1px solid #1c1c3a}.keys td:first-child{color:#fd3;white-space:nowrap}
+canvas{border-radius:10px;border:2px solid #2c2c5c;box-shadow:0 12px 40px #000a,0 0 30px #4cf2}
+#ov{background:radial-gradient(#0009,#000d);border-radius:8px}#ov h2{margin:0;font-size:30px;letter-spacing:.15em;text-shadow:0 0 14px currentColor}
+.admbox{border-radius:12px;box-shadow:0 14px 50px #000}
+/* level cards: stars, portal-run badge + pulsing neon glow on boss levels */
+.prev{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:#0c0c20;border:1px solid #23234a;border-radius:12px;padding:12px;margin-bottom:12px}
+#pv{width:200px;height:200px;border-radius:10px;border:1px solid #2c2c5c;image-rendering:pixelated}
+.pi{flex:1;min-width:210px}.pi h3{margin:0 0 4px;font-size:20px}.pi p{margin:0 0 10px;color:var(--mute)}
+.poses button{padding:4px 8px;font-size:11px}.poses button.on{border-color:#4cf;color:#4cf}
+#pvb{padding:10px 18px;font-size:15px;min-width:200px}#pvb.buy{border-color:#4f6;box-shadow:0 0 12px #4f64}
+#shop .sk.sel{outline:2px solid #fff}
+.xp{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:linear-gradient(#1a1a38,#0e0e22);border:1px solid #2c2c5c;border-radius:12px;padding:8px 12px}
+#plvl{background:linear-gradient(#4cf,#27a);color:#012;padding:4px 10px;border-radius:8px;font-size:15px;box-shadow:0 0 10px #4cf6}
+.xpb{flex:1;height:10px;background:#15152e;border-radius:6px;overflow:hidden}.xpb i{display:block;height:100%;background:linear-gradient(90deg,#4cf,#a4f);transition:width .5s}
+#xptxt{font-size:12px;color:#aab;min-width:110px;text-align:right}
+.lock{text-align:center;padding:10px}.lock .big{font-size:46px}.req{background:#0c0c20;border:1px solid #23234a;border-radius:10px;padding:10px;margin:8px auto;max-width:420px;text-align:left}.req .xpb{margin:6px 0}.req small{color:var(--mute)}
+.rw{display:flex;gap:10px;padding:5px 4px;border-bottom:1px solid #1c1c3a;font-size:13px}.rw b{color:#fd3;min-width:48px}.rw span{flex:1}.rw.ok{opacity:.6}
+.sub{margin:16px 0 8px;font-size:13px;letter-spacing:.15em;color:#4cf}
+#trails{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+#trails .sk{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,#222)}
+#trails .sk.on{border-color:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 40%,transparent)}#trails .sk small{font-size:11px;color:var(--mute)}
+#map .lv{height:74px;position:relative}
+#map .lv.done small.st,#map .lv small.st{color:#fd3;font-size:13px;letter-spacing:1px}
+#map .lv .bd{position:absolute;top:-8px;right:-4px;font-style:normal;font-size:9px;font-weight:bold;background:linear-gradient(#a4f,#63d);color:#fff;padding:1px 6px;border-radius:9px;box-shadow:0 0 8px #a4f}
+#map .lv.boss:not(:disabled){animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 6px #fd35,0 0 0 #a4f0}50%{box-shadow:0 0 16px #fd3,0 0 26px #a4f9}}
+@media(pointer:coarse){#touch{display:flex}}
+</style>
+</head>
+<body>
+<main id="menu"><header class="top"><div class="logo">▲ NEON <b>PARKOUR</b><small>50 LEVELS · 5 BOSSES</small></div><div class="chips"><span class="chip" id="pts"></span><span class="chip" id="clr"></span><span class="chip" id="dth"></span></div></header><div class="xp"><b id="plvl">LV 1</b><div class="xpb"><i id="xpbar"></i></div><span id="xptxt"></span></div>
+<nav class="tabs"><button class="tab on" data-p="pLevels">🌍 World 1</button><button class="tab" id="tabW2" data-p="pW2">🌌 World 2</button><button class="tab" data-p="pSkins">🎨 Skins</button><button class="tab" data-p="pSet">⚙ Settings</button></nav><section id="pLevels" class="pane">
+
+<p class="note">You get 3 ❤ per level. Finish with 3 ❤ for full XP, 2 for 60%, 1 for 30%. Collect 🪙 coins to buy skins and trails. Level up for rewards! Every 10th level is a BOSS fight followed by a timed portal run (double XP).</p>
+<div id="map"></div></section>
+<section id="pW2" class="pane" hidden><div id="map2"></div></section>
+<section id="pSkins" class="pane" hidden>
+ <div class="prev"><canvas id="pv" width="200" height="200"></canvas><div class="pi"><h3 id="pvn"></h3><p id="pvd"></p>
+  <div class="bar poses"><button class="on" data-pose="auto">Auto</button><button data-pose="idle">Idle</button><button data-pose="run">Run</button><button data-pose="jump">Jump</button><button data-pose="dash">Dash</button><button data-pose="slide">Slide</button></div>
+  <div class="bar"><button id="pvb"></button></div></div></div>
+ <div id="shop"></div><h3 class="sub">TRAILS</h3><div id="trails"></div><p id="trmsg" class="sub" style="min-height:16px"></p></section>
+<section id="pSet" class="pane" hidden>
+ <div class="set"><h3>LEVEL REWARDS</h3><div id="rwl"></div></div>
+ <div class="set"><h3>CONTROLS</h3><table class="keys"><tr><td>A / D</td><td>Run</td></tr><tr><td>W / Space</td><td>Jump (jump into a wall to wall-jump)</td></tr><tr><td>Shift / K</td><td>Dash (2 s reload)</td></tr><tr><td>S / ↓</td><td>Slide under low bars (while running)</td></tr><tr><td>R</td><td>Restart the level</td></tr><tr><td>Esc</td><td>Back to the map</td></tr></table></div>
+ <div class="set"><h3>SOUND</h3><div class="bar"><button class="volic">🔊</button><input type="range" class="volr" min="0" max="100" aria-label="Volume"></div></div>
+ <div class="set"><h3>SAVE DATA</h3><button id="rs">Reset progress</button></div>
+</section></main>
+<div id="game" hidden>
+ <div class="bar"><button id="bk">← Map</button><button id="rt">↻ Restart</button><button class="volic">🔊</button><input type="range" class="volr" min="0" max="100" aria-label="Volume"></div>
+ <div style="position:relative"><canvas id="c" width="640" height="360"></canvas><div id="ov" hidden></div></div>
+ <div id="touch"><div><button data-c="KeyA">◀</button><button data-c="KeyD">▶</button></div><div><button data-c="KeyS">⤓</button><button data-c="ShiftLeft">»</button><button data-c="Space">▲</button></div></div>
+</div>
+<script>
+"use strict";
+/* ===== SAVE (localStorage; try/catch because storage can be unavailable) ===== */
+const KEY="parkour50.v1";
+let save=(()=>{try{return Object.assign({done:0,best:{},pts:0,earned:{},skins:["classic"],skin:"classic"},JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return{done:0,best:{},pts:0,earned:{},skins:["classic"],skin:"classic"}}})();
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}};
+
+/* ===== SOUND: synthesized with WebAudio (no files). Volume 0-100 is saved. ===== */
+if(typeof save.vol!=="number")save.vol=60;
+/* ECONOMY SAVE FIELDS: coins = shop currency, xp = player level progress, rw = claimed level rewards, d2 = World 2 levels cleared. Old saves migrate: points -> coins, earned points -> XP */
+if(save.coins===undefined){save.coins=save.pts||0;save.xp=Object.values(save.earned||{}).reduce((a,b)=>a+b,0);save.pts=0}
+Object.assign(save,{xp:save.xp||0,rw:save.rw||{},trails:save.trails||["none"],trail:save.trail||"none",d2:save.d2||0,cleared:save.cleared||{}});
+const NEW=()=>({done:0,best:{},pts:0,earned:{},skins:["classic"],skin:"classic",coins:0,xp:0,rw:{},trails:["none"],trail:"none",d2:0,cleared:{}});
+let AC=null,master=null,preVol=60;
+function setVol(v){save.vol=v;if(master)master.gain.value=Math.pow(v/100,2)*.5}
+function audio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.connect(AC.destination);setVol(save.vol)}catch(e){}}
+ if(AC&&AC.state==="suspended")AC.resume();return AC}
+function tone(f0,f1,d,type,vol,delay){const a=audio();if(!a||save.vol===0)return;const t=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();
+ o.type=type||"square";o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+d);
+ g.gain.setValueAtTime(vol||.3,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.02)}
+function noise(d,vol,lp){const a=audio();if(!a||save.vol===0)return;const n=Math.floor(a.sampleRate*d),buf=a.createBuffer(1,n,a.sampleRate),dt=buf.getChannelData(0);
+ for(let i=0;i<n;i++)dt[i]=(Math.random()*2-1)*(1-i/n);const s=a.createBufferSource();s.buffer=buf;const f=a.createBiquadFilter();f.type="lowpass";f.frequency.value=lp||2000;
+ const g=a.createGain();g.gain.value=vol||.3;s.connect(f);f.connect(g);g.connect(master);s.start()}
+const SFX={
+ jump:()=>tone(280,620,.12,"square",.25),
+ wall:()=>tone(420,900,.1,"square",.25),
+ dash:()=>{noise(.18,.3,1800);tone(500,120,.18,"sawtooth",.15)},
+ land:()=>tone(120,50,.08,"triangle",.4),
+ hurt:()=>{tone(260,50,.35,"sawtooth",.35);noise(.2,.25,900)},
+ crumble:()=>noise(.25,.25,600),
+ check:()=>{tone(660,660,.08,"square",.2);tone(990,990,.12,"square",.2,.09)},
+ win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,f,.16,"square",.25,i*.11)),
+ lose:()=>[400,330,260,180].forEach((f,i)=>tone(f,f*.9,.2,"sawtooth",.25,i*.14)),
+ buy:()=>{tone(988,988,.07,"square",.22);tone(1319,1319,.2,"square",.22,.07)},
+ click:()=>tone(700,500,.05,"square",.15),
+ warn:()=>tone(150,150,.1,"square",.12),
+ pop:()=>{tone(900,300,.1,"sawtooth",.3);noise(.08,.2,3000)},
+ whoosh:()=>{noise(.3,.22,1200);tone(300,700,.25,"triangle",.12)},
+ alert:()=>tone(880,880,.07,"square",.15),
+ shoot:()=>tone(520,260,.08,"square",.12),
+ coin:()=>{tone(1200,1200,.05,"square",.15);tone(1600,1600,.08,"square",.15,.05)},
+ spring:()=>tone(200,800,.15,"sine",.3),
+ slide:()=>noise(.2,.2,900),boost:()=>tone(300,900,.2,"sawtooth",.18),laser:()=>{tone(1500,200,.35,"sawtooth",.3);noise(.25,.25,3000)}};
+const sfx=n=>{try{SFX[n]()}catch(e){}};
+/* Volume sliders (menu + in-game) and mute icons stay in sync */
+function syncVol(){document.querySelectorAll("input.volr").forEach(o=>o.value=save.vol);document.querySelectorAll(".volic").forEach(i=>i.textContent=save.vol===0?"🔇":save.vol<45?"🔉":"🔊")}
+document.querySelectorAll("input.volr").forEach(r=>{r.oninput=()=>{setVol(+r.value);syncVol();persist();const n=performance.now();if(n-(window._vt||0)>120){window._vt=n;sfx("click")}};r.onchange=()=>r.blur()});
+document.querySelectorAll(".volic").forEach(b=>b.onclick=()=>{if(save.vol>0){preVol=save.vol;setVol(0)}else setVol(preVol||60);syncVol();persist();sfx("click");b.blur()});
+syncVol();
+const $=s=>document.querySelector(s);
+const cv=$("#c"),ctx=cv.getContext("2d");ctx.imageSmoothingEnabled=false;
+const VW=640,VH=360;
+const tier=n=>n<=15?"Easy":n<=35?"Medium":"Hard";
+const tcol=n=>({Easy:"#4cf",Medium:"#fb3",Hard:"#f4a"})[tier(n)];
+
+/* ===== LEVEL GENERATOR: seeded, difficulty scales with level number =====
+   Easy 1-15: gaps, steps, light spikes, first wall/moving/crumble intros.
+   Medium 16-35: more of everything, vertical movers (20+), gravity zones (25+).
+   Hard 36-50: wide gaps, dense spikes, hanging spikes in gravity zones, small steps. */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gen(lv,opts){
+ const R=rng(lv*7919+13+((opts&&opts.seed)||0)),d=Math.min(1,(lv-1)/49),rr=(a,b)=>a+R()*(b-a),cl=y=>Math.max(200,Math.min(300,y));
+ const L={solids:[],spikes:[],zones:[],movers:[],crumbs:[],checks:[],tips:[],fakes:[],sliders:[],pads:[],coins:[],tramps:[],boosts:[],vanish:[],haz:[],lasers:[]};
+ let cx=0,gy=280;
+ const plat=(x,y,w,h)=>{const r={x,y,w,h:h||400};L.solids.push(r);return r};
+ const tip=(t,x,y)=>L.tips.push({t,x,y:y||150});
+ plat(0,gy,200);cx=200;L.spawn={x:40,y:gy-24};L.checks.push({x:0,sx:40,sy:gy-24});
+ if(lv===1)tip("A/D run · W/Space jump",20);if(lv===2)tip("Shift/K: dash (2s reload)",20);
+ const flat=(len,spk)=>{plat(cx,gy,len);
+  if(spk&&lv>=4&&len>=140&&R()<.3+d*.45){const n=len>=260&&d>.5?2:1;for(let i=0;i<n;i++)L.spikes.push({x:cx+len*(i+1)/(n+1)-16,y:gy-14,w:32,h:14,dir:1})}
+  cx+=len};
+ const S={
+  gap(){cx+=rr(30+d*35,52+d*43);gy=cl(gy+rr(-30,30));flat(rr(90,150)|0,1)},
+  flat(){flat(rr(110,200)|0,1)},
+  steps(){const n=3+(R()*(2+d*3)|0);for(let i=0;i<n;i++){cx+=rr(38,52+d*26);gy=cl(gy+(i%2?1:-1)*rr(10,32));const w=rr(56-d*18,64-d*16)|0;plat(cx,gy,w,14);cx+=w}cx+=rr(40,56);flat(120)},
+  crumble(){const n=3+(R()*3|0);cx+=22;for(let i=0;i<n;i++){const b={x:cx,y:gy,w:36,h:14,crumble:1,st:0,t:0};L.solids.push(b);L.crumbs.push(b);cx+=54}flat(110)},
+  moving(){let m;
+   if(lv>=20&&R()<.4){m={x:cx+35,y:gy,w:60,h:14,mv:"v",y0:gy-45,y1:gy+45,sp:.025+d*.015,ph:rr(0,6),dx:0,dy:0};cx+=130}
+   else{const g=rr(140,170+d*30)|0;m={x:cx,y:gy,w:60,h:14,mv:"h",x0:cx,x1:cx+g-60,sp:.02+d*.02,ph:rr(0,6),dx:0,dy:0};cx+=g}
+   L.solids.push(m);L.movers.push(m);flat(110)},
+  wall(){const h=150+d*40|0,x0=cx;plat(x0,gy,40+16+64+20+60);
+   plat(x0+40,gy-h,16,h-60);plat(x0+40+16+64,gy-h,20,h);cx=x0+200},
+  /* NEW: tunnel = low bar to slide under; boost = speed strip; tramp = trampoline platform; vanish = disappearing platforms */
+  /* DYNAMIC HAZARDS: swing = pendulum blade, spin = rotating spike arms (both time-driven), laser = toggling beam, ice = slippery floor */
+  swing(){const len=rr(300,360)|0,n=1+(d>.55?1:0);plat(cx,gy,len);for(let i=0;i<n;i++)L.haz.push({k:"swing",px:cx+len*(n===1?.45:.28+.3*i),py:gy-140,len:rr(110,125)|0,amp:.85+d*.2,sp:.035+d*.015,ph:rr(0,6),r:16});cx+=len},
+  spin(){const len=rr(250,300)|0;plat(cx,gy,len);L.haz.push({k:"spin",x:cx+len/2,y:gy-46,sp:(.045+d*.02)*(R()<.5?1:-1),ph:rr(0,6),arms:d>.6?3:2});cx+=len},
+  laser(){const len=rr(280,340)|0,n=2+(d>.5?1:0),on=Math.round(60-d*10),off=Math.round(95-d*25);plat(cx,gy,len);
+   for(let i=0;i<n;i++)L.lasers.push({x:cx+len*(i+1)/(n+1),y0:gy-190,y1:gy,on,off,ph:i*Math.round((on+off)/n)});cx+=len},
+  ice(){const len=rr(280,340)|0,r=plat(cx,gy,len);r.ice=1;if(lv>=20&&R()<.6)L.spikes.push({x:cx+len*.55-16,y:gy-14,w:32,h:14,dir:1});cx+=len+rr(30+d*30,55+d*30);gy=cl(gy+rr(-15,15));flat(120)},
+  tunnel(){const len=rr(240,300)|0,bw=rr(80,120)|0;plat(cx,gy,len);plat(cx+len/2-bw/2,gy-30,bw,14);cx+=len},
+  boost(){plat(cx,gy,150);L.boosts.push({x:cx+55,y:gy-4,w:56,h:4,dir:1});cx+=150+rr(165,195);gy=cl(gy+rr(-20,10));flat(150)},
+  tramp(){plat(cx,gy,110);const t={x:cx+155,y:gy+10,w:64,h:14,tramp:1,t:0};L.solids.push(t);L.tramps.push(t);cx+=110+45+64+55;gy=Math.max(200,gy-100);flat(130)},
+  vanish(){const n=3+(R()*2|0);cx+=45;for(let i=0;i<n;i++){const y=cl(gy+(i%2?-1:1)*rr(0,22)),b={x:cx,y,w:62,h:14,vanish:1,st:0,t:0};L.solids.push(b);L.vanish.push(b);gy=y;cx+=62+rr(40,60)}flat(120)},
+  pad(){plat(cx,gy,120);L.pads.push({x:cx+88,y:gy-8,w:28,h:8,t:0});cx+=120+rr(150,180);gy=cl(gy+rr(-25,10));flat(130)},
+  /* TRAPS: trap = hidden spikes (lv 8+), slider = charging blocks (lv 14+), fake = falling floor (lv 18+) */
+  trap(){const len=rr(240,300)|0,n=1+(d>.4?1:0)+(d>.75?1:0);plat(cx,gy,len);
+   for(let i=0;i<n;i++)L.spikes.push({x:cx+len*(i+1)/(n+1)-16,y:gy-14,w:32,h:14,dir:1,hid:1,st:0,t:0,pop:0});cx+=len},
+  slider(){plat(cx,gy,150);cx+=150+rr(55,80+d*15);gy=cl(gy+rr(-15,15));const x0=cx;flat(220,0);
+   L.sliders.push({x:x0+196,y:gy-62,w:22,h:22,hx:x0+196,dir:-1,st:0,t:0});
+   if(d>.6)L.sliders.push({x:x0+20,y:gy-62,w:22,h:22,hx:x0+20,dir:1,st:0,t:0})},
+  fake(){const n=2+(R()*(2+d*3)|0);for(let i=0;i<n;i++){const b={x:cx,y:gy,w:64,h:14,fake:1,st:0,t:0,y0:gy,vy:0};L.solids.push(b);L.fakes.push(b);cx+=64}flat(120)},
+  grav(){const W=rr(220,260+d*40)|0,H=rr(170,190)|0;plat(cx,gy,W+80);plat(cx+30,gy-H,W+20,16);
+   L.zones.push({x:cx+40,y:gy-H-20,w:W,h:H+30});
+   if(lv>=38)for(let i=1;i<=(lv>=44?2:1);i++)L.spikes.push({x:cx+40+W*i/(lv>=44?3:2)-16,y:gy-H+16,w:32,h:14,dir:-1});
+   cx+=W+80}
+ };
+ const tips={ice:"Ice! You slide. Brake early.",swing:"Time your run past the swinging blade!",laser:"Lasers blink on and off. Cross while they are off!",spin:"Slip past the spinner when its arms are level.",tunnel:"Hold S / ↓ while running to slide under the bar!",vanish:"These platforms vanish 2 s after you step on them!",boost:"Speed strips shoot you forward. Jump at the end!",tramp:"Trampolines launch you sky-high!",pad:"Bounce pads launch you across big gaps!",trap:"Cracks in the floor? Spikes are coming!",slider:"Airborne? Blocks will charge you!",fake:"Some floors fall. Keep moving!",wall:"Jump into a wall, jump again to wall-jump",crumble:"Blocks crumble: keep moving!",grav:"Purple zones flip gravity",moving:"Hop onto moving platforms",steps:"Hop between floating platforms"};
+ const pool=["gap","gap","flat"];if(lv>=3)pool.push("steps");if(lv>=6)pool.push("wall");if(lv>=9)pool.push("moving");if(lv>=12)pool.push("crumble");if(lv>=25)pool.push("grav");if(lv>=5)pool.push("pad");if(lv>=7)pool.push("tunnel");if(lv>=11)pool.push("vanish");if(lv>=13)pool.push("boost");if(lv>=16)pool.push("tramp");if(lv>=4)pool.push("ice");if(lv>=15)pool.push("swing");if(lv>=17)pool.push("laser");if(lv>=22)pool.push("spin");if(lv>=8)pool.push("trap");if(lv>=14)pool.push("slider");if(lv>=18)pool.push("fake");
+ const intro={3:"steps",5:"pad",7:"tunnel",11:"vanish",13:"boost",16:"tramp",4:"ice",15:"swing",17:"laser",22:"spin",6:"wall",8:"trap",9:"moving",12:"crumble",14:"slider",18:"fake",25:"grav"}[lv],n=(opts&&opts.segs)||6+Math.floor(lv*.45);
+ for(let i=0;i<n;i++){const t=(i===1&&intro)?intro:pool[R()*pool.length|0];
+  if(i===1&&intro)tip(tips[intro],cx);S[t]();
+  if(i%4===3)L.checks.push({x:cx-30,sx:cx-30,sy:gy-24})}
+ /* Coins float above most platforms */
+ L.solids.forEach(r=>{if(r.crumble||r.fake||r.mv||r.w<40||r.w>320||(r.h<=16&&r.w>200)||R()>.55)return;L.coins.push({x:r.x+r.w/2,y:r.y-32,got:false,ph:R()*6})});
+ /* Moving exit door: from level 10 it dashes away from you (1 hop, 2 from lv25, 3 from lv40), then stays put */
+ const hops=lv<10?0:lv<25?1:lv<40?2:3,pl=160+hops*120;plat(cx,gy,pl);
+ L.goal={x:cx+70,x0:cx+70,y:gy-44,w:28,h:44,hops,h0:hops,max:cx+pl-44,mv:false,tx:0};L.end=cx+pl;
+ if(lv===10)tip("The exit door runs away from you!",cx+10,gy-110);
+ return L}
+
+/* ===== BOSS LEVELS (every 10th): stage 1 = dodge the boss until its timer breaks it, stage 2 = timed portal run ===== */
+function genBoss(n){const k=n/10,L={solids:[],spikes:[],zones:[],movers:[],crumbs:[],checks:[{x:0,sx:300,sy:276}],tips:[],fakes:[],sliders:[],bul:[],coins:[],pads:[],arena:1};
+ L.solids.push({x:0,y:300,w:VW,h:400},{x:90,y:230,w:100,h:14},{x:450,y:230,w:100,h:14},{x:270,y:165,w:100,h:14});
+ L.spawn={x:300,y:276};L.goal={x:-999,x0:-999,y:256,w:28,h:44,hops:0,h0:0,max:0,mv:false,tx:0,col:"#a4f"};L.end=VW;
+ L.boss={n:k,x:320,y:70,t:0,dur:(25+5*k)*60,done:false,name:["HIVE KING","NEON GOLEM","CORE EYE","EMBER DRAKE","VOID TYRANT"][k-1]};
+ L.tips.push({t:"Dodge everything until the boss breaks!",x:200,y:130});return L}
+function genRun(n){const k=n/10,L=gen(n,{segs:7+k,seed:77});L.limit=Math.ceil(L.end/(204*(.45+.03*k)))+8;L.tips.push({t:"PORTAL RUN: beat the clock!",x:20,y:120});return L}
+/* ===== CHASER / LASER BOSS (levels 20 and 40): a wall of void chases you from behind; lasers lock onto where you are heading ===== */
+function genChase(n){const k=n/10,L=gen(n,{segs:5+k,seed:55});L.goal.hops=0;L.goal.h0=0;L.goal.col="#a4f";
+ L.chase={x:-260,sp:1.5+k*.22,t:0,lz:[],name:k===2?"VOID MAW":"LASER WARDEN"};L.tips.push({t:"RUN! Something is chasing you!",x:20,y:120});return L}
+function chaseStep(){const c=L.chase;c.t++;
+ let sp=Math.min(3.1,c.sp+c.t*.0004);if(P.x-c.x>520)sp*=1.5; // slowly speeds up, catches up if you stall far ahead
+ c.x+=sp;const per=Math.round(210-c.sp*28);
+ if(c.t>150&&c.t%per===0){const m=c.sp>2.2?2:1;for(let i=0;i<m;i++)c.lz.push({x:P.x+7+P.vx*30+i*70+(Math.random()-.5)*30,t:0,hit:0})}
+ c.lz.forEach(z=>{z.t++;if(z.t===55)sfx("laser");if(z.t>=55&&z.t<75&&!z.hit&&!god&&Math.abs(P.x+7-z.x)<17){z.hit=1;die();c.x=Math.min(c.x,P.x-340);c.lz=[]}});
+ c.lz=c.lz.filter(z=>z.t<80);
+ if(c.x>P.x+2&&!god){die();c.x=P.x-340;c.lz=[]}}
+function drawChase(){const c=L.chase;if(!c)return;const x=c.x,g=ctx.createLinearGradient(x-90,0,x,0);g.addColorStop(0,"#1a0030");g.addColorStop(1,"#5b0a8a");
+ ctx.fillStyle="#12001f";ctx.fillRect(x-900,-20,810,VH+40);ctx.fillStyle=g;ctx.fillRect(x-90,-20,90,VH+40);
+ ctx.fillStyle="#c1f";for(let y=-10;y<VH+10;y+=26){const w=14+Math.sin(frames/5+y)*5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y+13);ctx.lineTo(x,y+26);ctx.fill()}
+ for(const ey of[110,175]){ctx.fillStyle="#f22";ctx.shadowColor="#f22";ctx.shadowBlur=14;ctx.fillRect(x-48,ey-9,26,18);ctx.shadowBlur=0;ctx.fillStyle="#000";ctx.fillRect(x-38+Math.min(8,Math.max(0,(P.x-x)/60)),ey-5,6,10)}
+ c.lz.forEach(z=>{if(z.t<55){ctx.strokeStyle=`rgba(255,40,40,${.4+.4*Math.sin(frames/2)})`;ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(z.x,0);ctx.lineTo(z.x,VH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="#f44";ctx.font="bold 14px monospace";ctx.textAlign="center";ctx.fillText("⚠",z.x,20)}
+  else{ctx.shadowColor="#f22";ctx.shadowBlur=20;ctx.fillStyle="#f33";ctx.fillRect(z.x-13,0,26,VH);ctx.fillStyle="#fff";ctx.fillRect(z.x-5,0,10,VH);ctx.shadowBlur=0}})}
+function bossStep(){const b=L.boss;b.t++;
+ if(!b.done){const k=b.n;
+  b.x=320+Math.sin(b.t/(75-k*5))*(150+k*18);b.y=70+Math.sin(b.t/40)*8;
+  const aim=()=>Math.atan2(P.y+12-b.y,P.x+7-b.x),f=(a,sp)=>L.bul.push({x:b.x,y:b.y+30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp});
+  if(b.t%(80-k*6)===0){const c=k<2?1:k<4?3:5;for(let i=0;i<c;i++)f(aim()+(i-(c-1)/2)*.22,3+k*.35);sfx("shoot")}
+  if(k>=2&&b.t%(40-k*4)===0)L.bul.push({x:Math.random()*VW,y:-6,vx:0,vy:2.4+k*.2});
+  const wi=190-k*15;if(b.t%wi===0){const side=(b.t/wi|0)%2;[0,1].forEach(s=>{if(k>=4||s===side)L.bul.push({x:s?VW+4:-22,y:282,w:22,h:18,vx:(s?-1:1)*(2.8+k*.4),vy:0})});sfx("alert")}
+  if(k>=3&&b.t%(130-k*10)===0){const m=8+2*k,o=Math.random()*6;for(let i=0;i<m;i++)f(o+i/m*6.283,2.2+k*.2);sfx("shoot")}
+  if(k===5&&b.t%6===0){b.sp=(b.sp||0)+.4;f(b.sp,3)}
+  if(b.t>=b.dur){b.done=true;L.bul=[];sfx("win");const g=L.goal;g.x=g.x0=560}}
+ L.bul.forEach(u=>{u.x+=u.vx;u.y+=u.vy});L.bul=L.bul.filter(u=>u.x>-40&&u.x<VW+40&&u.y<VH+20&&u.y>-40);
+ if(P.inv>0)P.inv--;
+ else if(!b.done&&!god){const hb={x:P.x+3,y:P.y+3,w:P.w-6,h:P.h-6};
+  if(L.bul.some(u=>ov(hb,u.w?u:{x:u.x-5,y:u.y-5,w:10,h:10}))){P.hearts--;deaths++;save.td=(save.td||0)+1;persist();P.inv=70;shake=10;sfx("hurt");if(P.hearts<=0)lose()}}}
+function drawBoss(){const b=L.boss;if(!b)return;
+ if(!(b.done&&frames%4<2)){const c=["#6b2","#2cf","#f4d","#fa5","#f33"][b.n-1],x=b.x,y=b.y;
+  ctx.fillStyle=c;ctx.fillRect(x-40,y-28,80,56);ctx.fillRect(x-48,y-8,8,24);ctx.fillRect(x+40,y-8,8,24);ctx.fillRect(x-32,y-40,10,14);ctx.fillRect(x+22,y-40,10,14);
+  ctx.fillStyle="#fff";ctx.fillRect(x-24,y-14,16,14);ctx.fillRect(x+8,y-14,16,14);const px=Math.max(-4,Math.min(4,(P.x-x)/60));
+  ctx.fillStyle="#000";ctx.fillRect(x-20+px,y-10,6,8);ctx.fillRect(x+12+px,y-10,6,8);ctx.fillRect(x-24,y+8,48,10);
+  ctx.fillStyle="#fff";for(let i=0;i<6;i++)ctx.fillRect(x-22+i*8,y+8,4,5)}
+ L.bul.forEach(u=>{if(u.w){ctx.fillStyle="#f84";ctx.fillRect(u.x,u.y,u.w,u.h);ctx.fillStyle="#ff0";ctx.fillRect(u.x+2,u.y+2,u.w-4,3)}else{ctx.fillStyle="#f4a";ctx.beginPath();ctx.arc(u.x,u.y,5,0,7);ctx.fill();ctx.fillStyle="#fff";ctx.fillRect(u.x-1,u.y-1,2,2)}});
+ if(b.done){ctx.fillStyle="#fff";ctx.font="bold 13px monospace";ctx.textAlign="center";ctx.fillText("BOSS DEFEATED! Enter the portal →",320,150)}}
+/* In-game HUD: rounded glass panels, drawn hearts, dash meter */
+function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function heart(x,y,s,on){ctx.fillStyle=on?"#ff3b5c":"#33283a";ctx.beginPath();ctx.arc(x-s/4,y,s/4,Math.PI,0);ctx.arc(x+s/4,y,s/4,Math.PI,0);ctx.lineTo(x,y+s*.55);ctx.closePath();ctx.fill();if(on){ctx.fillStyle="#fff7";ctx.fillRect(x-s/4-2,y-s/4+1,3,2)}}
+function drawHUD(){const ac=tcol(cur);ctx.save();ctx.lineWidth=1.5;ctx.strokeStyle=ac;
+ ctx.fillStyle="#0a0a18cc";rrect(6,6,176,30,8);ctx.fill();ctx.stroke();
+ ctx.fillStyle=ac;ctx.font="bold 11px monospace";ctx.textAlign="left";ctx.fillText((cur%10===0?"BOSS ":"LV ")+cur,14,19);
+ ctx.fillStyle="#9aa";ctx.font="9px monospace";ctx.fillText(tier(cur).toUpperCase()+(stage==="run"?" · RUN":""),14,31);
+ for(let i=0;i<3;i++)heart(110+i*22,16,16,i<P.hearts);
+ ctx.fillStyle="#0a0a18cc";rrect(VW-206,6,200,30,8);ctx.fill();ctx.stroke();
+ ctx.fillStyle="#fff";ctx.font="bold 11px monospace";ctx.fillText((frames/60).toFixed(1)+"s",VW-198,19);ctx.fillStyle="#fd3";ctx.fillText("◉"+save.coins+"  ●"+(P.coins||0)+"/"+(L.coins?L.coins.length:0),VW-198,31);
+ const r=P.dc>0?1-P.dc/120:1;ctx.fillStyle="#222";rrect(VW-130,12,118,8,4);ctx.fill();ctx.fillStyle=r>=1?"#4cf":"#58a";rrect(VW-130,12,Math.max(8,118*r),8,4);ctx.fill();
+ ctx.fillStyle="#9aa";ctx.font="9px monospace";ctx.textAlign="right";ctx.fillText(r>=1?"DASH READY":"DASH",VW-12,31);ctx.restore()}
+/* ===== ANIMATED CHARACTER + PER-SKIN EFFECTS ===== */
+const FX={classic:{c:["#cde"],r:.15,vy:-.2,l:18,s:2},neon:{c:["#4cf"],r:.9,vy:0,l:14,s:4,tr:1},ember:{c:["#fa5","#f52","#fd3"],r:.9,vy:-1,l:26,s:2},
+ pink:{c:["#f4a","#fff"],r:.45,vy:-.6,l:32,s:4,k:1},ghost:{c:["#bcd"],r:.7,vy:-.25,l:30,s:5,a:.35,tr:1},gold:{c:["#fd3","#fff"],r:.5,vy:-.3,l:24,s:3,k:2},
+ rainbow:{c:null,r:1,vy:0,l:18,s:4,tr:1},galaxy:{c:["#a8f","#4cf","#fff"],r:.8,vy:-.3,l:36,s:3,k:2},diamond:{c:["#fff","#9ef"],r:.6,vy:-.4,l:28,s:4,k:2},aurora:{c:["#4fa","#a4f","#4cf"],r:.8,vy:-.4,l:30,s:3,k:2},ice:{c:["#bff","#fff","#8ef"],r:.9,vy:0,l:20,s:3,tr:1}};
+function skinFx(){const e=FX[trailFx()]||FX.classic,mv=Math.abs(P.vx)>.7||!P.ground||P.dash>0;
+ if(Math.random()<e.r*(mv?1:.35)){const col=e.c?e.c[Math.random()*e.c.length|0]:`hsl(${frames*5%360},90%,60%)`;
+  fx.push({x:P.x+7+(Math.random()-.5)*(e.tr?4:10),y:P.y+(e.tr?12:4+Math.random()*18),vx:e.tr?0:-P.face*Math.random()*.6,vy:e.vy+(Math.random()-.5)*.4,t:e.l,m:e.l,c:col,s:e.s,a:e.a||1,k:e.k||0})}
+ if(P.ground&&P.stand&&P.stand.ice&&Math.abs(P.vx)>1&&frames%3===0)dust(P.x+7-P.face*5,P.g===1?P.y+P.h-1:P.y+1,2,"#cff");
+ if(P.ground&&Math.abs(P.vx)>1&&frames%6===0)dust(P.x+7-P.face*5,P.g===1?P.y+P.h-1:P.y+1,2);
+ if(fx.length>300)fx.splice(0,60)}
+function dust(x,y,n,c){for(let i=0;i<n;i++)fx.push({x,y,vx:(Math.random()-.5)*2.4,vy:-Math.random()*.9,t:20,m:20,c:c||"#cdd",s:2+Math.random()*2,a:.7,k:0})}
+function drawFx(){fx.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.t--;ctx.globalAlpha=Math.max(0,p.t/p.m)*p.a;ctx.fillStyle=p.c;const s=p.s;
+  if(p.k===2){ctx.fillRect(p.x-s,p.y-.5,s*2,1);ctx.fillRect(p.x-.5,p.y-s,1,s*2)}
+  else if(p.k===1){ctx.fillRect(p.x-s/2,p.y-s/2,s/3+1,s/2+1);ctx.fillRect(p.x+1,p.y-s/2,s/3+1,s/2+1);ctx.fillRect(p.x-s/2,p.y,s+1,s/2)}
+  else ctx.fillRect(p.x-s/2,p.y-s/2,s,s)});ctx.globalAlpha=1;fx=fx.filter(p=>p.t>0)}
+/* Character: idle bob, run cycle, jump/fall poses, wall slide, dash lean, landing squash & stretch */
+function gctx(){return ctx}function curP(){return P}
+function drawPlayer(c2,pp,skn){const ctx=c2||gctx(),P=pp||curP();if(!pp)drawFx();const sk=skn||skin(),f=P.dash>0?P.face:(P.wd&&!P.ground?-P.wd:P.face),air=!P.ground,v=P.vy*P.g,
+ run=P.ground&&Math.abs(P.vx)>.7,ph=frames*(.22+Math.abs(P.vx)*.05),wall=air&&P.wd&&v>0;
+ let sx=1,sy=1,lean=run?.08:0;if(air){sy=1+Math.min(.22,Math.abs(v)*.02);sx=1/sy}if(P.sq>0){sy=.78;sx=1.18;P.sq--}if(P.dash>0){sx=1.3;sy=.85;lean=.3}if(P.sl>0||P.h<24){sx=1.25;sy=.55;lean=.55}
+ ctx.save();ctx.translate(P.x+P.w/2,P.g===1?P.y+P.h:P.y);ctx.rotate(lean*f*P.g);ctx.scale(f*sx,P.g*sy);
+ ctx.globalAlpha=(P.inv>0&&Math.floor(P.inv/4)%2)?.35:(sk.a||1);
+ const bc=P.dash>0?tcol(cur):(sk.rb?`hsl(${frames*4%360},90%,60%)`:sk.c),bd=sk.t,R=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)},dk="#0006",
+ bob=(!air&&!run)?Math.sin(frames*.09)*.8:0,sw=run?Math.sin(ph)*4.5:0,l1=run?Math.max(0,Math.sin(ph))*3:0,l2=run?Math.max(0,-Math.sin(ph))*3:0;
+ // back arm + back leg
+ if(wall)R(2,-22,3,7,bc);else if(air)R(v<0?-7:-8,v<0?-21:-16,3,v<0?6:4,bc);else R(-1+sw,-14+bob,3,6,bc);R(-1,-14,0,0,dk);
+ if(air){R(v<0?-5:-7,-7,4,v<0?5:7,bc)}else if(wall)R(0,-7,4,7,bc);else R(-3+sw,-(7-l1),4,7-l1,bc);
+ ctx.fillStyle=dk;if(!air)ctx.fillRect(-3+sw,-(7-l1),4,7-l1);
+ // body, belt
+ R(-5,-15+bob,10,9,bc);R(-5,-9+bob,10,2,bd);
+ // front leg + shoes
+ if(air){R(v<0?1:3,v<0?-8:-7,4,v<0?6:7,bc);R(v<0?1:3,-2,5,2,bd)}else if(wall){R(2,-6,4,6,bc)}else{R(-1-sw,-(7-l2),4,7-l2,bc);R(-1-sw,-2-l2*0,5,2,bd)}
+ // head, headband (tail waves behind), eye
+ R(-5,-24+bob,10,9,bc);R(-5,-21+bob,10,3,bd);R(-10-(run?2:0),-21+bob+Math.sin(frames*.5)*1.5,5,2,bd);R(1,-23+bob,3,3,"#fff");R(2.5,-22+bob,1.5,2,"#000");
+ // front arm
+ if(P.dash>0)R(-10,-14,7,3,bc);else if(wall)R(3,-22,3,7,bc);else if(air)R(v<0?4:5,v<0?-21:-16,3,v<0?6:4,bc);else R(-1-sw,-14+bob,3,6,bc);
+ if(sk.sp){for(let i=0;i<3;i++){const q=frames*.15+i*2.1;R(-4+Math.floor((Math.sin(q*3.1)+1)*4),-22+Math.floor((Math.cos(q*2.3+i)+1)*9),2,2,sk.sp)}}
+ ctx.restore();ctx.globalAlpha=1}
+/* World decorations: bounce pads, coins, checkpoint flags */
+/* Hazard math: positions come from time (frames) so movement is deterministic and easy to tune */
+function hazPts(h){if(h.k==="swing"){const a=h.amp*Math.sin(frames*h.sp+h.ph);return[{x:h.px+Math.sin(a)*h.len,y:h.py+Math.cos(a)*h.len,r:h.r}]}
+ const a=frames*h.sp+h.ph,o=[];for(let i=0;i<h.arms;i++){const b=a+i*6.2832/h.arms;for(const d of[14,28,44])o.push({x:h.x+Math.cos(b)*d,y:h.y+Math.sin(b)*d,r:7})}return o}
+function hazHit(hb){return(L.haz||[]).some(h=>hazPts(h).some(q=>{const cx=Math.max(hb.x,Math.min(q.x,hb.x+hb.w)),cy=Math.max(hb.y,Math.min(q.y,hb.y+hb.h));return(q.x-cx)**2+(q.y-cy)**2<q.r*q.r}))}
+/* Laser: timer = (frames+phase) mod (on+off). Both the beam graphics and the collision exist only while it is ON */
+function laserOn(z){return(frames+z.ph)%(z.on+z.off)<z.on}
+function laserHit(hb){return(L.lasers||[]).some(z=>laserOn(z)&&hb.x<z.x+7&&hb.x+hb.w>z.x-7&&hb.y<z.y1&&hb.y+hb.h>z.y0)}
+function drawSaw(x,y,r){ctx.save();ctx.translate(x,y);ctx.rotate(frames*.3);ctx.fillStyle="#e33";for(let i=0;i<8;i++){ctx.rotate(.7854);ctx.beginPath();ctx.moveTo(r-2,-3);ctx.lineTo(r+5,0);ctx.lineTo(r-2,3);ctx.fill()}ctx.beginPath();ctx.arc(0,0,r-2,0,7);ctx.fill();ctx.fillStyle="#fcc";ctx.beginPath();ctx.arc(0,0,r*.4,0,7);ctx.fill();ctx.restore()}
+function drawThings(){
+ L.solids.forEach(r=>{if(r.ice&&r.x+r.w>0){ctx.fillStyle="#bff6";ctx.fillRect(r.x,r.y,r.w,5);ctx.fillStyle="#fff8";for(let x=r.x+10;x<r.x+r.w-12;x+=46)ctx.fillRect(x,r.y+1,12,2)}});
+ (L.haz||[]).forEach(h=>{if(h.k==="swing"){const q=hazPts(h)[0];ctx.strokeStyle="#99a";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(h.px,h.py);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.fillStyle="#556";ctx.fillRect(h.px-8,h.py-6,16,6);drawSaw(q.x,q.y,q.r)}
+  else{ctx.fillStyle="#556";ctx.beginPath();ctx.arc(h.x,h.y,6,0,7);ctx.fill();const p=hazPts(h);for(let i=0;i<h.arms;i++){const t=p[i*3+2];ctx.strokeStyle="#c33";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(h.x,h.y);ctx.lineTo(t.x,t.y);ctx.stroke();drawSaw(t.x,t.y,8)}}});
+ (L.lasers||[]).forEach(z=>{const o=laserOn(z),t=(frames+z.ph)%(z.on+z.off),warn=!o&&t>z.on+z.off-28;
+  ctx.fillStyle="#445";ctx.fillRect(z.x-9,z.y0-10,18,12);ctx.fillRect(z.x-9,z.y1-2,18,3);ctx.fillStyle=o?"#f33":warn?"#fa3":"#622";ctx.fillRect(z.x-3,z.y0+2,6,4);
+  if(o){ctx.shadowColor="#f22";ctx.shadowBlur=14;ctx.fillStyle="#f44";ctx.fillRect(z.x-5,z.y0+6,10,z.y1-z.y0-8);ctx.fillStyle="#fff";ctx.fillRect(z.x-2,z.y0+6,4,z.y1-z.y0-8);ctx.shadowBlur=0}
+  else if(warn&&Math.floor(frames/3)%2){ctx.fillStyle="#f446";ctx.fillRect(z.x-1,z.y0+6,2,z.y1-z.y0-8)}});
+ (L.boosts||[]).forEach(b=>{ctx.fillStyle="#fb3";ctx.fillRect(b.x,b.y,b.w,b.h);ctx.fillStyle="#fff";for(let i=0;i<4;i++){const x=b.x+((i*14+frames*2)%b.w);ctx.fillRect(x,b.y-3,3,3);ctx.fillRect(x+3,b.y-6,3,3);ctx.fillRect(x,b.y-9,3,3)}});
+ (L.tramps||[]).forEach(t=>{ctx.fillStyle="#fff";for(let i=0;i<4;i++)ctx.fillRect(t.x+8+i*14,t.y+4+(t.t>0?2:0),6,2)});
+ (L.vanish||[]).forEach(b=>{if(b.st===2){ctx.strokeStyle="#8ef5";ctx.setLineDash([4,4]);ctx.strokeRect(b.x+.5,b.y+.5,b.w-1,b.h-1);ctx.setLineDash([])}});
+ (L.pads||[]).forEach(p=>{const gy=p.y+8,c=p.t>0?3:8;ctx.fillStyle="#2a6";ctx.fillRect(p.x,gy-2,p.w,2);ctx.fillStyle="#4f6";ctx.fillRect(p.x+3,gy-c,p.w-6,c-2);ctx.fillStyle="#fff";ctx.fillRect(p.x,gy-c-3,p.w,3);
+  ctx.fillStyle="#4f6";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("▲",p.x+14,gy-16-Math.abs(Math.sin(frames/8))*4)});
+ (L.coins||[]).forEach(c=>{if(c.got)return;const w=Math.abs(Math.cos(frames/12+c.ph))*5+1,y=c.y+Math.sin(frames/20+c.ph)*2;ctx.fillStyle="#fd3";ctx.beginPath();ctx.ellipse(c.x,y,w,6,0,0,7);ctx.fill();ctx.fillStyle="#fff9";ctx.fillRect(c.x-w*.4,y-4,Math.max(1,w*.4),3)});
+ L.checks.forEach(c=>{if(c.x<=0)return;const on=P.cp===c,fy=c.sy+24,w=Math.sin(frames/8)*2;ctx.fillStyle="#889";ctx.fillRect(c.sx,fy-30,2,30);ctx.fillStyle=on?"#4f6":"#566";ctx.beginPath();ctx.moveTo(c.sx+2,fy-30);ctx.lineTo(c.sx+16+w,fy-25);ctx.lineTo(c.sx+2,fy-20);ctx.fill()})}
+function drawTop(){ctx.save();ctx.textAlign="center";
+ if(L.limit){const s=Math.max(0,L.tl/60);ctx.fillStyle=s<10&&Math.floor(frames/10)%2?"#f44":"#fd3";ctx.font="bold 18px monospace";ctx.fillText("⏱ "+s.toFixed(1)+"s",VW/2,38)}
+ if(god){ctx.fillStyle="#4f6";ctx.font="bold 11px monospace";ctx.fillText("GOD MODE",VW/2,VH-8)}
+ if(L.chase){const d=P.x-L.chase.x,r=Math.max(0,Math.min(1,1-(d-40)/460));ctx.fillStyle=r>.7&&Math.floor(frames/6)%2?"#f44":"#fff";ctx.font="bold 12px monospace";ctx.fillText(L.chase.name,VW/2,40);ctx.fillStyle="#222";ctx.fillRect(170,46,300,10);ctx.fillStyle=r>.7?"#f44":"#c1f";ctx.fillRect(170,46,300*r,10);ctx.strokeStyle="#fff";ctx.strokeRect(170,46,300,10);ctx.font="9px monospace";ctx.fillText("DANGER",VW/2,67)}
+ if(L.boss){const b=L.boss,r=Math.max(0,1-b.t/b.dur);ctx.fillStyle="#fff";ctx.font="bold 12px monospace";ctx.fillText(b.done?"DEFEATED!":"BOSS "+b.name,VW/2,40);ctx.fillStyle="#222";ctx.fillRect(170,46,300,10);ctx.fillStyle="#f44";ctx.fillRect(170,46,300*r,10);ctx.strokeStyle="#fff";ctx.strokeRect(170,46,300,10)}
+ ctx.restore()}
+
+/* ===== GAME STATE ===== */
+let L,P,mode="menu",cur=1,deaths=0,frames=0,parts=[],trail=[],stage=null,god=false,godUsed=false,adminOpen=false,adminAuthed=false,camX=0,fx=[],shake=0;
+const K={left:["KeyA","ArrowLeft"],right:["KeyD","ArrowRight"],jump:["KeyW","Space","ArrowUp"],dash:["ShiftLeft","ShiftRight","KeyK"],slide:["KeyS","ArrowDown"]};
+const down={},held=k=>K[k].some(c=>down[c]);
+function kd(c){audio();if(!down[c]&&P){if(K.jump.includes(c))P.jb=7;if(K.dash.includes(c))P.db=6}down[c]=1}
+const ku=c=>down[c]=0;
+addEventListener("keydown",e=>{if(adminOpen){if(e.code==="Escape")closeAdmin();return}if(e.shiftKey&&e.code===ADMIN_KEY){e.preventDefault();toggleAdmin();return}if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code))e.preventDefault();
+ if(e.code==="KeyR"&&mode!=="menu")play(cur,stage);if(e.code==="Escape")toMenu();kd(e.code)});
+addEventListener("keyup",e=>ku(e.code));
+document.querySelectorAll("#touch button").forEach(b=>{b.onpointerdown=e=>{e.preventDefault();kd(b.dataset.c)};b.onpointerup=b.onpointerleave=()=>ku(b.dataset.c)});
+
+function play(n,st){cur=n;stage=n%10===0?(st||(n%20===0?"chase":"boss")):null;L=stage==="boss"?genBoss(n):stage==="chase"?genChase(n):stage==="run"?genRun(n):gen(n,n>50?{segs:7+Math.ceil((n-50)*.8),seed:500}:undefined);if(L.limit)L.tl=L.limit*60;godUsed=god;camX=0;fx=[];shake=0;P={x:L.spawn.x,y:L.spawn.y,w:14,h:24,vx:0,vy:0,g:1,face:1,ground:false,stand:null,coy:0,jb:0,db:0,dc:0,dash:0,dashes:1,wl:0,wd:0,hearts:3,inv:0,coins:0,sq:0,sl:0,slc:0,bt:0,cp:L.checks[0]};
+ deaths=0;frames=0;parts=[];trail=[];mode="play";$("#menu").hidden=true;$("#game").hidden=false;$("#ov").hidden=true;
+ if(stage==="run"){mode="ready";$("#ov").hidden=false;$("#ov").innerHTML=`<h2 style="color:#a4f">PORTAL CHALLENGE</h2><p>Reach the exit in ${L.limit} seconds!</p><div class="bar"><button id="go">GO!</button></div>`;$("#go").onclick=()=>{$("#ov").hidden=true;mode="play";sfx("click")}}}
+function toMenu(){mode="menu";P=null;$("#game").hidden=true;$("#menu").hidden=false;drawMap()}
+function die(){if(god){P.x=P.cp.sx;P.y=P.cp.sy;P.vx=P.vy=0;P.g=1;P.dash=0;return}deaths++;save.td=(save.td||0)+1;persist();P.hearts--;shake=12;sfx("hurt");for(let i=0;i<18;i++)parts.push({x:P.x+7,y:P.y+12,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,t:30});
+ if(P.hearts<=0){lose();return}
+ L.fakes.forEach(b=>{b.st=0;b.y=b.y0;b.vy=0});(L.vanish||[]).forEach(b=>b.st=0);L.spikes.forEach(k=>{if(k.hid){k.st=0;k.pop=0}});L.sliders.forEach(m=>{m.st=0;m.x=m.hx});
+ {const g=L.goal;g.x=g.x0;g.hops=g.h0;g.mv=false}
+ P.x=P.cp.sx;P.y=P.cp.sy;P.vx=P.vy=0;P.g=1;P.dash=0}
+function lose(msg){mode="lose";sfx("lose");$("#ov").hidden=false;$("#ov").innerHTML=`<h2 style="color:#f44">${msg||"OUT OF HEARTS"}</h2><p>Finish a level with all 3 hearts for full points.</p><div class="bar"><button id="rp">Retry</button><button id="mp">Map</button></div>`;$("#rp").onclick=()=>play(cur,stage);$("#mp").onclick=toMenu}
+function coinGain(){const cb=save.cb||(save.cb={}),n=P.coins||0,g=Math.max(0,n-(cb[cur]||0));cb[cur]=Math.max(cb[cur]||0,n);return g} // each coin pays once per level
+function startRun(){play(cur,"run")}
+function win(){if(stage==="boss"||stage==="chase"){startRun();return}mode="win";sfx("win");const t=frames/60;const hp=P.hearts,pts=Math.round((10+cur*2)*(cur%10===0?2:1)*[0,.3,.6,1][hp]),prev=save.earned[cur]||0,gain=godUsed?0:Math.max(0,pts-prev),cg=godUsed?0:coinGain()+((save.cleared||{})[cur]?0:(cur%10===0?25:5));if(!godUsed)save.earned[cur]=Math.max(prev,pts);save.xp=(save.xp||0)+gain;save.coins+=cg;if(!godUsed)save.cleared[cur]=1;const ups=godUsed?[]:claimRewards();if(!godUsed){const sr=save.stars||(save.stars={});sr[cur]=Math.max(sr[cur]||0,hp)}if(cur<=50){if(cur>save.done)save.done=cur}else save.d2=Math.max(save.d2||0,cur-50);if(!save.best[cur]||t<save.best[cur])save.best[cur]=+t.toFixed(1);persist();
+ $("#ov").hidden=false;$("#ov").innerHTML=`<h2 style="color:${tcol(cur)}">LEVEL ${cur} CLEAR</h2><p style="font-size:22px">${"⭐".repeat(hp)}${"☆".repeat(3-hp)}</p><p>${t.toFixed(1)}s · ${deaths} hurts · ●${P.coins||0} collected</p><p>+${gain} XP · +${cg} 🪙 coins · total ${save.coins} 🪙</p>${ups.length?'<p style="color:#4f6">🎉 LEVEL UP! '+ups.join(" · ")+"</p>":""}<div class="bar">${cur!==50&&cur<60?'<button id="nx">Next ▶</button>':"<b>"+"All 50 levels complete! World 2 is coming soon 🌌"+"</b>"}<button id="rp">Replay</button><button id="mp">Map</button></div>`;
+ if(cur!==50&&cur<60)$("#nx").onclick=()=>play(cur+1);$("#rp").onclick=()=>play(cur);$("#mp").onclick=toMenu}
+$("#bk").onclick=toMenu;$("#rt").onclick=()=>play(cur,stage);
+/* Two-tap confirm (browser confirm() dialogs are blocked inside embedded pages) */
+$("#rs").onclick=e=>{const b=e.currentTarget;
+ if(!b.dataset.arm){b.dataset.arm=1;b.textContent="Tap again to ERASE";b.style.borderColor="#f44";setTimeout(()=>{delete b.dataset.arm;b.textContent="Reset progress";b.style.borderColor=""},3000);return}
+ delete b.dataset.arm;b.textContent="Reset progress";b.style.borderColor="";
+ save=Object.assign(NEW(),{vol:save.vol});persist();drawMap()};
+
+/* ===== ADMIN PANEL =====
+   Open with Shift+M (change ADMIN_KEY to use another letter). The password is stored only as a SHA-256 hash.
+   NOTE: this all runs in the browser, so a determined person can bypass it. It is a convenience lock, not real security. */
+const ADMIN_KEY="KeyM",ADMIN_HASH="3bb693dab72bcf6b73fba1cdc06420de10aa19e0e1b2980730c940812d9d197a";
+const adm=document.createElement("div");adm.id="adm";adm.hidden=true;document.body.append(adm);
+let adminFails=0,adminLockUntil=0,adminTimer=null;
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+/* Admin: unlock / lock / equip any skin, including the special ones */
+function adminSkins(){const box=$("#askins"),bs="padding:2px 6px;font-size:11px";
+ box.innerHTML=`<div style="text-align:left;font-size:12px;margin:6px 0 2px">SKINS <button id="askall" style="${bs}">Unlock all</button></div>`+SKINS.map(k=>{const own=save.skins.includes(k.id);
+  return `<div class="bar" style="justify-content:space-between;margin:2px 0;font-size:12px"><span style="color:${k.c}">■ ${k.n}${save.skin===k.id?" ✔":""}${k.special?" ("+k.special+")":""}</span><span><button data-u="${k.id}" style="${bs}">${own?"Lock":"Unlock"}</button> <button data-e="${k.id}" style="${bs}">Equip</button></span></div>`}).join("");
+ $("#askall").onclick=()=>{SKINS.forEach(k=>{if(!save.skins.includes(k.id))save.skins.push(k.id)});persist();adminSkins();renderShop()};
+ box.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const id=b.dataset.u,i=save.skins.indexOf(id);if(i>=0){if(id==="classic")return;save.skins.splice(i,1);if(save.skin===id)save.skin="classic"}else save.skins.push(id);persist();adminSkins();renderShop()});
+ box.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>{const id=b.dataset.e;if(!save.skins.includes(id))save.skins.push(id);save.skin=id;persist();adminSkins();renderShop()})}
+function toggleAdmin(){adminOpen?closeAdmin():openAdmin()}
+function openAdmin(){adminOpen=true;if(mode==="play")mode="paused";for(const k in down)down[k]=0;adm.hidden=false;renderAdmin()}
+function closeAdmin(){adminOpen=false;clearInterval(adminTimer);adm.hidden=true;if(mode==="paused")mode="play"}
+function renderAdmin(){
+ clearInterval(adminTimer);
+ if(!adminAuthed){
+  adm.innerHTML=`<div class="admbox"><h3>🔒 ADMIN</h3><input type="password" id="apw" placeholder="Password" autocomplete="off"><div class="bar"><button id="alog">Unlock</button><button id="acl">Close</button></div><p id="amsg"></p></div>`;
+  const login=async()=>{const now=Date.now(),m=$("#amsg");if(now<adminLockUntil){m.textContent="Locked. Try again in "+Math.ceil((adminLockUntil-now)/1000)+"s";return}
+   let ok=false;try{ok=(await sha($("#apw").value))===ADMIN_HASH}catch(e){m.textContent="Crypto is unavailable in this browser.";return}
+   if(ok){adminAuthed=true;adminFails=0;renderAdmin()}else{adminFails++;if(adminFails>=3){adminLockUntil=Date.now()+10000;adminFails=0}m.textContent="Wrong password.";$("#apw").value=""}};
+  $("#alog").onclick=login;$("#acl").onclick=closeAdmin;$("#apw").onkeydown=e=>{if(e.key==="Enter")login()};$("#apw").focus();return}
+ adm.innerHTML=`<div class="admbox"><h3>🛠 ADMIN PANEL</h3>
+  <div class="bar"><input type="number" id="alv" min="1" max="50" value="${cur}" style="width:70px"><button id="ago">Go to level</button><button id="arun">Portal run</button></div>
+  <div class="bar"><button id="agod"></button></div><div class="bar"><button id="aco">+500 🪙</button><button id="axp">+200 XP</button></div><div id="askins"></div><p id="amsg" style="margin:2px"></p><pre id="ast"></pre>
+  <div class="bar"><button id="acl">Close</button><button id="alock">Lock</button></div></div>`;
+ const lvl=()=>Math.max(1,Math.min(50,Math.floor(+$("#alv").value)||1));
+ $("#ago").onclick=()=>{const n=lvl();closeAdmin();play(n)};
+ $("#arun").onclick=()=>{const n=lvl();if(n%10){$("#amsg").textContent="Portal runs exist on levels 10, 20, 30, 40, 50.";return}closeAdmin();play(n,"run")};
+ const gb=$("#agod"),gl=()=>gb.textContent="God mode: "+(god?"ON":"OFF");gl();
+ gb.onclick=()=>{god=!god;if(god)godUsed=true;gl()};
+ $("#aco").onclick=()=>{save.coins+=500;persist();drawMap()};
+ $("#axp").onclick=()=>{save.xp=(save.xp||0)+200;const u=claimRewards();persist();drawMap();$("#amsg").textContent=u.length?"Rewards: "+u.join(", "):"+200 XP"}; // points are not awarded for levels played with god mode
+ const st=$("#ast"),upd=()=>{const inGame=P&&!$("#game").hidden;
+  let s=`ALL TIME\n Total deaths (hearts lost): ${save.td||0}\n Levels cleared: ${save.done}/50\n Coins: ${save.coins} · XP: ${save.xp||0} (Player Lv ${plvl().l})\n Skins: ${save.skins.length}/${SKINS.length}\n\nCURRENT LEVEL\n`;
+  if(!inGame)s+=" Not in a level";else{
+   s+=` Level ${cur} (${tier(cur)}${stage?", "+stage+" stage":""})\n Hearts: ${P.hearts}/3\n Deaths this level: ${deaths}\n Time: ${(frames/60).toFixed(1)}s\n Progress: ${Math.round(Math.max(0,Math.min(1,P.x/L.end))*100)}% (x ${Math.round(P.x)}/${Math.round(L.end)})\n`;
+   if(L.limit)s+=` Time left: ${(Math.max(0,L.tl)/60).toFixed(1)}s of ${L.limit}s\n`;
+   if(L.boss)s+=` Boss: ${L.boss.name}, ${Math.min(100,Math.round(L.boss.t/L.boss.dur*100))}% beaten\n`;
+   s+=` God mode: ${god?"ON":"off"}`}
+  st.textContent=s};
+ upd();adminTimer=setInterval(upd,250);
+ $("#acl").onclick=closeAdmin;$("#alock").onclick=()=>{adminAuthed=false;renderAdmin()};adminSkins()}
+
+/* ===== ECONOMY: coins buy skins/trails; points earned in levels become XP; player level gives rewards and unlocks World 2 ===== */
+const xpNeed=l=>30+10*l;
+function plvl(x){x=x===undefined?(save.xp||0):x;let l=1;while(x>=xpNeed(l)){x-=xpNeed(l);l++}return{l,cur:x,need:xpNeed(l)}}
+const w2Unlocked=()=>false; // World 2 is coming soon: the tab stays locked
+const LV_REWARDS={2:{c:50,t:"+50 coins"},3:{c:30,t:"+30 coins"},5:{skin:"aurora",t:"Special skin: Aurora"},7:{c:75,t:"+75 coins"},10:{c:100,t:"+100 coins"},15:{c:150,t:"+150 coins"},20:{c:250,t:"+250 coins"}};
+function claimRewards(){const out=[],l=plvl().l;for(const k in LV_REWARDS){const n=+k;if(n<=l&&!save.rw[n]){save.rw[n]=1;const r=LV_REWARDS[k];if(r.c)save.coins+=r.c;if(r.skin&&!save.skins.includes(r.skin))save.skins.push(r.skin);out.push("Lv "+n+": "+r.t)}}return out}
+const TRAILS=[{id:"none",n:"Skin default",cost:0,c:"#cde",fx:null},{id:"fire",n:"🔥 Fire",cost:120,c:"#fa5",fx:"ember"},{id:"frost",n:"❄ Frost",cost:120,c:"#bff",fx:"ice"},{id:"hearts",n:"💗 Hearts",cost:180,c:"#f4a",fx:"pink"},{id:"stars",n:"✦ Star dust",cost:250,c:"#fd3",fx:"gold"},{id:"prism",n:"🌈 Prism",cost:350,c:"#f8f",fx:"rainbow"}];
+const trailFx=()=>{const t=TRAILS.find(x=>x.id===save.trail);return t&&t.fx?t.fx:save.skin};
+function renderTrails(){const s=$("#trails");if(!s)return;
+ s.innerHTML=TRAILS.map(t=>{const own=save.trails.includes(t.id),on=save.trail===t.id;return `<button class="sk${on?" on":""}" data-t="${t.id}" style="--c:${t.c}"><i class="sw" style="background:${t.c};--t:#fff"></i><b>${t.n}</b><small>${on?"EQUIPPED":own?"owned · tap to equip":"🪙 "+t.cost}</small></button>`}).join("");
+ s.querySelectorAll("button").forEach(b=>b.onclick=()=>{const t=TRAILS.find(x=>x.id===b.dataset.t),m=$("#trmsg");
+  if(!save.trails.includes(t.id)){if(save.coins<t.cost){m.textContent="Need "+(t.cost-save.coins)+" more coins for "+t.n;sfx("click");return}save.coins-=t.cost;save.trails.push(t.id);sfx("buy")}else sfx("click");
+  save.trail=t.id;m.textContent="";persist();drawMap()})}
+/* World 2 tab: locked panel with both unlock conditions, or 10 levels (numbered 51-60 internally) */
+function drawWorld2(){const m=$("#map2");m.innerHTML="";const pl=plvl();
+ if(!w2Unlocked()){m.innerHTML=`<div class="lock"><div class="big">🔒</div><h3>WORLD 2</h3><p style="font-size:20px;color:#a4f;margin:6px 0">COMING SOON</p><p>A brand-new world is on the way. Stay tuned!</p></div>`;return}
+ const sec=document.createElement("div");sec.className="sec";sec.innerHTML=`<h3 style="color:#a4f">WORLD 2 · CRYSTAL VOID<small>Levels 1–10</small><em>${Math.min(10,save.d2||0)}/10</em></h3>`;
+ const g=document.createElement("div");g.className="grid5";
+ for(let k=1;k<=10;k++){const n=50+k,ok=k<=(save.d2||0)+1,done=k<=(save.d2||0),boss=n%10===0,b=document.createElement("button"),sr=Math.max(1,(save.stars||{})[n]||1);
+  b.disabled=!ok;b.className="lv"+(done?" done":"")+(boss?" boss":"");b.style.setProperty("--c","#a4f");
+  b.innerHTML=(boss?'<i class="bd">⏱ PORTAL RUN</i>':"")+`<span class="no">${boss?"👹 ":""}${k}</span>`+(done?`<small class="st">${"★".repeat(sr)}${"☆".repeat(3-sr)}</small><small>${save.best[n]?save.best[n]+"s":"cleared"}</small>`:`<small>${!ok?"🔒":boss?"BOSS + PORTAL":"▶"}</small>`);
+  b.onclick=()=>{sfx("click");play(n)};g.append(b)}
+ sec.append(g);m.append(sec)}
+
+/* ===== MAP SCREEN ===== */
+/* Level map: grouped by tier with per-tier progress; boss levels are highlighted */
+function drawMap(){const m=$("#map");m.innerHTML="";
+ const pl=plvl();$("#pts").textContent="🪙 "+save.coins;$("#clr").textContent="✔ "+save.done+"/50";$("#dth").textContent="💀 "+(save.td||0);
+ $("#plvl").textContent="LV "+pl.l;$("#xpbar").style.width=Math.round(pl.cur/pl.need*100)+"%";$("#xptxt").textContent=pl.cur+" / "+pl.need+" XP";$("#tabW2").textContent="🔒 World 2 · Soon";
+ $("#rwl").innerHTML=Object.entries(LV_REWARDS).map(([n,r])=>`<div class="rw${pl.l>=n?" ok":""}"><b>Lv ${n}</b><span>${r.t}</span><i>${pl.l>=n?"✔":"🔒"}</i></div>`).join("");renderShop();
+ [["Easy",1,15],["Medium",16,35],["Hard",36,50]].forEach(([nm,a,z])=>{const cleared=Math.max(0,Math.min(save.done,z)-a+1),sec=document.createElement("div");sec.className="sec";
+  sec.innerHTML=`<h3 style="color:${tcol(a)}">${nm.toUpperCase()}<small>Levels ${a}–${z}</small><em>${cleared}/${z-a+1}</em></h3>`;const g=document.createElement("div");g.className="grid5";
+  for(let n=a;n<=z;n++){const ok=n<=save.done+1,done=n<=save.done,boss=n%10===0,b=document.createElement("button");b.disabled=!ok;b.className="lv"+(done?" done":"")+(boss?" boss":"");b.style.setProperty("--c",tcol(n));
+   const sr=Math.max(1,(save.stars||{})[n]||1);b.title=boss?"Boss fight, then a timed portal run":"";
+   b.innerHTML=(boss?'<i class="bd">⏱ PORTAL RUN</i>':"")+`<span class="no">${boss?"👹 ":""}${n}</span>`+(done?`<small class="st">${"★".repeat(sr)}${"☆".repeat(3-sr)}</small><small>${save.best[n]?save.best[n]+"s":"cleared"}</small>`:`<small>${!ok?"🔒":boss?"BOSS + PORTAL":"▶"}</small>`);b.onclick=()=>{sfx("click");play(n)};g.append(b)}
+  sec.append(g);m.append(sec)});drawWorld2()}
+
+/* ===== REWARDED AD (PLACEHOLDER) =====
+   No real ad network is connected. To go live, replace the body of showRewardedAd with your ad SDK call
+   and invoke done() only when the SDK reports the ad was fully watched. */
+function showRewardedAd(done){const o=document.createElement("div");o.id="adv";document.body.append(o);let s=5,ok=false;
+ const draw=()=>{o.innerHTML=`<div class="admbox"><h3>📺 AD PLACEHOLDER</h3><p>No real ad network is connected yet.<br>Your ad SDK goes in showRewardedAd().</p><p>${s>0?"Reward in "+s+"s…":"Done!"}</p><div class="bar">${s>0?"":'<button id="adok">🎁 Claim skin</button>'}<button id="adx">${s>0?"Cancel":"Close"}</button></div></div>`;
+  $("#adx").onclick=end;if(s<=0)$("#adok").onclick=()=>{ok=true;end()}};
+ const end=()=>{clearInterval(t);o.remove();if(ok)done()},t=setInterval(()=>{s--;draw();if(s<=0)clearInterval(t)},1000);draw()}
+function watchAd(k){showRewardedAd(()=>{if(!save.skins.includes(k.id))save.skins.push(k.id);save.skin=k.id;persist();sfx("buy");drawMap()})}
+
+/* ===== SKIN PREVIEW: click a card to preview it on an animated character; the button adapts (Equip / Buy / Need N more / Watch ad / Coming soon) ===== */
+let prevSkin=save.skin||"classic",pvPose="auto",pvT=0,pvFx=[];
+const POSES=["idle","run","jump","dash","slide"],SKIN_INFO={classic:"Clean and simple.",neon:"A bright cyan streak follows you.",ember:"Leaves a trail of rising sparks.",pink:"Floating pixel hearts.",ghost:"See-through wisps drift behind.",gold:"Golden glints everywhere.",rainbow:"A trail that never stops changing color.",galaxy:"Starry cosmic sparkle.",diamond:"Icy diamond glints."};
+function updatePreviewUI(){const b=$("#pvb");if(!b)return;const k=SKINS.find(x=>x.id===prevSkin)||SKINS[0],own=save.skins.includes(k.id),on=save.skin===k.id;
+ $("#pvn").textContent=k.n;$("#pvd").textContent=SKIN_INFO[k.id]||"";
+ let t,dis=false,fn=null;
+ if(on){t="✔ Equipped";dis=true}
+ else if(own){t="Equip";fn=()=>{save.skin=k.id;sfx("click")}}
+ else if(k.special==="ad"){t="▶ Watch an ad to unlock";fn=()=>watchAd(k)}
+ else if(k.special==="level"){t="🔒 Unlocks at Player Level "+k.lvl;dis=true}
+ else if(k.special==="paid"){t="💎 Real money · coming soon";dis=true}
+ else if(save.coins<k.cost){t="Need "+(k.cost-save.coins)+" more 🪙 ("+k.cost+")";dis=true}
+ else{t="Buy · 🪙 "+k.cost;fn=()=>{save.coins-=k.cost;save.skins.push(k.id);save.skin=k.id;sfx("buy")}}
+ b.textContent=t;b.disabled=dis;b.className=dis?"":"buy";
+ b.onclick=()=>{if(!fn)return;const ad=k.special==="ad"&&!own;fn();if(!ad){persist();drawMap()}}}
+document.querySelectorAll("[data-pose]").forEach(b=>b.onclick=()=>{pvPose=b.dataset.pose;document.querySelectorAll("[data-pose]").forEach(x=>x.classList.toggle("on",x===b));sfx("click")});
+function previewLoop(){requestAnimationFrame(previewLoop);const cv2=$("#pv");if(!cv2||$("#menu").hidden||$("#pSkins").hidden)return;
+ const c=cv2.getContext("2d"),k=SKINS.find(x=>x.id===prevSkin)||SKINS[0];c.imageSmoothingEnabled=false;pvT++;
+ const pose=pvPose==="auto"?POSES[Math.floor(pvT/120)%POSES.length]:pvPose;
+ c.fillStyle="#0a0a1c";c.fillRect(0,0,200,200);c.fillStyle="#12122a";for(let x=0;x<200;x+=40)c.fillRect(x,0,1,200);
+ c.fillStyle="#0e1422";c.fillRect(0,152,200,48);c.fillStyle="#4cf";c.fillRect(0,152,200,3);
+ c.save();c.scale(4,4);
+ const fy=37,jh=pose==="jump"?Math.abs(Math.sin(pvT/22))*14:0,h=pose==="slide"?12:24,
+  pp={x:18,y:fy-h-jh,w:14,h,g:1,face:1,vx:pose==="run"?3.4:pose==="dash"?8.5:0,vy:pose==="jump"?(Math.cos(pvT/22)>0?-6:6):0,ground:pose!=="jump",wd:0,dash:pose==="dash"?5:0,sl:pose==="slide"?10:0,sq:0,inv:0},
+  e=FX[k.id]||FX.classic;
+ if(Math.random()<e.r*(pose==="idle"?.35:1)){const col=e.c?e.c[Math.random()*e.c.length|0]:`hsl(${pvT*5%360},90%,60%)`;
+  pvFx.push({x:25+(Math.random()-.5)*(e.tr?1:3),y:fy-(e.tr?12:2+Math.random()*16)-jh,vx:e.tr?-1.2:-Math.random()*.4,vy:e.vy*.25+(Math.random()-.5)*.1,t:e.l,m:e.l,c:col,s:e.s/3,a:e.a||1,k:e.k||0})}
+ pvFx.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.t--;c.globalAlpha=Math.max(0,p.t/p.m)*p.a;c.fillStyle=p.c;const s=p.s;if(p.k===2){c.fillRect(p.x-s,p.y-.15,s*2,.3);c.fillRect(p.x-.15,p.y-s,.3,s*2)}else c.fillRect(p.x-s/2,p.y-s/2,s,s)});
+ c.globalAlpha=1;pvFx=pvFx.filter(p=>p.t>0);
+ const f0=frames;frames=pvT;drawPlayer(c,pp,k);frames=f0;c.restore()}
+
+/* ===== SKIN SHOP (c = body color, t = headband color) ===== */
+const SKINS=[{id:"classic",n:"Classic",cost:0,c:"#ffffff",t:"#888"},{id:"neon",n:"Neon Cyan",cost:100,c:"#4cf",t:"#fff"},{id:"ember",n:"Ember",cost:160,c:"#fa5",t:"#a31"},{id:"pink",n:"Pixel Pink",cost:160,c:"#f4a",t:"#fff"},{id:"ghost",n:"Ghost",cost:300,c:"#bbc",t:"#66a",a:.7},{id:"gold",n:"Gold",cost:450,c:"#fd3",t:"#a60"},
+ {id:"rainbow",n:"★ Rainbow",special:"ad",cost:0,c:"#f4a",t:"#fff",rb:1},
+ {id:"galaxy",n:"★ Galaxy",special:"paid",cost:0,c:"#3a1a7a",t:"#4cf",sp:"#fff"},
+ {id:"diamond",n:"★ Diamond",special:"paid",cost:0,c:"#9ef",t:"#fff",sp:"#fff"},
+ {id:"aurora",n:"★ Aurora",special:"level",lvl:5,cost:0,c:"#4fa",t:"#a4f",sp:"#cff"}];
+const skin=()=>SKINS.find(s=>s.id===save.skin)||SKINS[0];
+function renderShop(){const s=$("#shop");s.innerHTML=SKINS.map(k=>{const own=save.skins.includes(k.id),on=save.skin===k.id;
+ return `<button data-id="${k.id}" class="sk${on?" on":""}${k.id===prevSkin?" sel":""}" style="--c:${k.c}" ><i class="sw${k.rb?" rb":""}" style="background:${k.c};--t:${k.t}"></i><b>${k.n}</b><small>${on?"EQUIPPED":own?"owned · tap to equip":k.special==="ad"?"▶ Watch an ad to unlock":k.special==="paid"?"💎 Real money · COMING SOON":k.special==="level"?"🔒 Player Lv "+k.lvl:"🪙 "+k.cost}</small></button>`}).join("");
+ s.querySelectorAll("button").forEach(b=>b.onclick=()=>{prevSkin=b.dataset.id;sfx("click");renderShop()});updatePreviewUI();renderTrails()}
+/* Menu tabs: Levels / Skins / Settings */
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t===b));document.querySelectorAll(".pane").forEach(p=>p.hidden=p.id!==b.dataset.p);sfx("click")});
+
+/* ===== PHYSICS ===== */
+const live=r=>!((r.crumble||r.fake||r.vanish)&&r.st===2);
+const ov=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+/* Slide helpers: the collider shrinks 24 -> 12 px (feet stay put) and only grows back when there is headroom */
+function setH(h){if(P.g===1)P.y+=P.h-h;P.h=h}
+function canStand(){const y=P.g===1?P.y+P.h-24:P.y;return !L.solids.some(r=>live(r)&&P.x<r.x+r.w&&P.x+P.w>r.x&&y<r.y+r.h&&y+24>r.y)}
+function step(){
+ frames++;const s=P.g=L.zones.some(z=>P.x+7>z.x&&P.x+7<z.x+z.w&&P.y+12>z.y&&P.y+12<z.y+z.h)?-1:1;
+ L.movers.forEach(m=>{const ox=m.x,oy=m.y;m.ph+=m.sp;const k=.5-.5*Math.cos(m.ph);if(m.mv==="h")m.x=m.x0+(m.x1-m.x0)*k;else m.y=m.y0+(m.y1-m.y0)*k;m.dx=m.x-ox;m.dy=m.y-oy});
+ L.crumbs.forEach(b=>{if(b.st===1&&--b.t<=0){b.st=2;b.t=140}else if(b.st===2&&--b.t<=0)b.st=0});
+ (L.vanish||[]).forEach(b=>{if(b.st===1){if(--b.t<=0){b.st=2;b.t=150}}else if(b.st===2&&--b.t<=0)b.st=0}); // vanish: 2 s shaking, 2.5 s gone
+ (L.tramps||[]).forEach(t=>{if(t.t>0)t.t--});
+ L.fakes.forEach(b=>{if(b.st===1){if(--b.t<=0){b.st=2;b.vy=0}}else if(b.st===2&&b.y<600){b.vy+=.6;b.y+=b.vy}}); // fake floors: shake, then fall for good
+ if(P.stand&&P.stand.mv){P.x+=P.stand.dx;P.y+=P.stand.dy}
+ const mx=(held("right")?1:0)-(held("left")?1:0);if(mx)P.face=mx;
+ P.jb--;P.db--;P.dc--;if(P.wl>0)P.wl--;P.bt--;P.slc--;
+ if(P.sl>0){P.sl--;P.vx*=.985;if(!P.ground||P.dash>0)P.sl=0}
+ if(P.sl<=0&&P.h<24&&canStand()){setH(24);P.slc=18}
+ if(held("slide")&&P.ground&&P.sl<=0&&P.h===24&&P.slc<=0&&Math.abs(P.vx)>1.5&&!P.dash){P.sl=34;setH(12);P.vx=P.face*5.4;sfx("slide");dust(P.x+7,P.g===1?P.y+P.h:P.y,5)}
+ // dash: brief horizontal burst, no gravity
+ if(P.db>0&&P.dc<=0&&!P.dash){P.dash=9;P.dc=120;P.db=0;sfx("dash")} // 120 frames = 2 s reload
+ if(P.dash>0){P.vx=P.face*8.5;P.vy=0;P.dash--;trail.push({x:P.x,y:P.y,t:8})}
+ else{if(P.wl<=0&&!(P.sl>0)&&P.bt<=0)P.vx+=(mx*3.4-P.vx)*(P.ground?(P.stand&&P.stand.ice?.035:.3):.16);P.vy=Math.max(-10,Math.min(10,P.vy+.5*s))}
+ // wall slide + jump
+ if(!P.ground&&P.wd&&P.vy*s>0&&mx===P.wd&&!P.dash)P.vy=s*Math.min(Math.abs(P.vy),1.8);
+ if(P.jb>0){if(P.coy>0){P.vy=-9.8*s;P.coy=0;P.jb=0;sfx("jump");dust(P.x+7,P.g===1?P.y+P.h:P.y,5)}
+  else if(P.wd&&!P.ground){P.vy=-9*s;P.vx=-P.wd*5;P.wl=9;P.face=-P.wd;P.jb=0;sfx("wall")}}
+ if(!held("jump")&&P.vy*s<-3&&!P.dash)P.vy*=.8; // variable jump height
+ // move X
+ P.x+=P.vx;for(const r of L.solids){if(live(r)&&ov(P,r)){if(P.vx>0)P.x=r.x-P.w;else if(P.vx<0)P.x=r.x+r.w;else P.x+=P.x+P.w/2<r.x+r.w/2?-1:1;P.vx=0}}
+ // move Y
+ const wasG=P.ground,fvy=P.vy*s;P.y+=P.vy;P.ground=false;P.stand=null;
+ for(const r of L.solids){if(live(r)&&ov(P,r)){if(P.vy>0){P.y=r.y-P.h;if(s===1){P.ground=true;P.stand=r}}else if(P.vy<0){P.y=r.y+r.h;if(s===-1){P.ground=true;P.stand=r}}P.vy=0}}
+ if(P.stand&&P.stand.tramp){const t=P.stand;t.t=10;P.vy=-12.5*s;P.ground=false;P.stand=null;sfx("spring");shake=Math.max(shake,3);dust(t.x+32,t.y,6,"#f4a")}
+ if(P.stand&&P.stand.vanish&&P.stand.st===0){P.stand.st=1;P.stand.t=120;sfx("crumble")}
+ if(P.stand&&P.stand.crumble&&P.stand.st===0){P.stand.st=1;P.stand.t=28;sfx("crumble")}
+ if(P.stand&&P.stand.fake&&P.stand.st===0){P.stand.st=1;P.stand.t=Math.max(15,22-Math.floor(cur/10));sfx("crumble")}
+ if(P.ground){if(!wasG&&fvy>5){sfx("land");P.sq=8;dust(P.x+7,P.g===1?P.y+P.h:P.y,8);if(fvy>7)shake=Math.max(shake,3)}P.coy=7}else P.coy--;
+ const pr=dx=>L.solids.some(r=>live(r)&&P.x+dx<r.x+r.w&&P.x+dx+P.w>r.x&&P.y+4<r.y+r.h&&P.y+P.h-4>r.y);
+ P.wd=P.ground?0:pr(2)?1:pr(-2)?-1:0;
+ skinFx();
+ (L.lasers||[]).forEach(z=>{const o=laserOn(z);if(o&&!z.was&&Math.abs(z.x-P.x)<260)sfx("laser");z.was=o});
+ (L.boosts||[]).forEach(b=>{if(P.ground&&ov(P,{x:b.x,y:b.y-2,w:b.w,h:b.h+4})){if(P.bt<=0)sfx("boost");P.vx=b.dir*6.5;P.bt=26;P.face=b.dir}});
+ (L.pads||[]).forEach(p=>{if(p.t>0)p.t--;if(P.vy*s>=0&&ov(P,{x:p.x,y:p.y-4,w:p.w,h:p.h+4})){P.vy=-13.5*s;P.ground=false;P.coy=0;p.t=10;sfx("spring");shake=Math.max(shake,3);dust(p.x+14,p.y+8,6,"#4f6")}});
+ (L.coins||[]).forEach(c=>{if(!c.got&&Math.abs(P.x+7-c.x)<14&&Math.abs(P.y+12-c.y)<17){c.got=true;P.coins++;sfx("coin");for(let i=0;i<8;i++)fx.push({x:c.x,y:c.y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,t:20,m:20,c:"#fd3",s:3,a:1,k:2})}});
+ if(L.arena)P.x=Math.max(0,Math.min(VW-P.w,P.x));if(L.boss)bossStep();if(L.chase)chaseStep();if(L.limit&&--L.tl<=0)lose("TIME UP!");
+ // hazards, checkpoints, goal
+ const hb={x:P.x+3,y:P.y+3,w:P.w-6,h:P.h-6};
+ /* Hidden spikes: armed -> warning (cracks flash 18 frames) -> pop out -> retract when you are far away */
+ L.spikes.forEach(k=>{if(!k.hid)return;const dx=Math.abs(P.x+7-(k.x+k.w/2)),near=dx<90&&Math.abs(P.y+P.h-(k.y+k.h))<70;
+  if(k.st===0){if(near){k.st=1;k.t=18;sfx("warn")}}
+  else if(k.st===1){if(--k.t<=0){k.st=2;sfx("pop")}}
+  else if(k.st===2){k.pop=Math.min(1,k.pop+.17);if(dx>220)k.st=3}
+  else{k.pop-=.1;if(k.pop<=0){k.pop=0;k.st=0}}});
+ /* Sliding blocks: when you are airborne nearby they flash, then charge sideways, then slowly return */
+ L.sliders.forEach(m=>{
+  if(m.st===0){if(!P.ground&&Math.abs(P.x+7-(m.x+11))<230&&Math.abs(P.y+12-(m.y+11))<110){m.st=1;m.t=18;m.dir=P.x+7<m.x+11?-1:1;sfx("alert")}}
+  else if(m.st===1){if(--m.t<=0){m.st=2;sfx("whoosh")}}
+  else if(m.st===2){m.x+=m.dir*7;if(Math.abs(m.x-m.hx)>=190)m.st=3}
+  else{const dh=m.hx-m.x;m.x+=Math.sign(dh)*Math.min(2.5,Math.abs(dh));if(Math.abs(m.hx-m.x)<1){m.x=m.hx;m.st=0}}});
+ if(!god&&(L.spikes.some(k=>(!k.hid||k.pop>.7)&&ov(hb,{x:k.x+3,y:k.dir===1?k.y+5:k.y,w:k.w-6,h:k.h-5}))||L.sliders.some(m=>ov(hb,m))||hazHit(hb)||laserHit(hb))||P.y>VH+60||P.y<-120)die();
+ L.checks.forEach(c=>{if(P.x>c.x&&c.x>P.cp.x){P.cp=c;if(c.x>0)sfx("check")}});
+ {const g=L.goal; // moving exit door
+  if(g.hops>0&&!g.mv&&Math.abs(P.x+7-(g.x+14))<110){g.hops--;g.tx=Math.min(g.x+120,g.max);g.mv=true;sfx("whoosh")}
+  if(g.mv){const dx=g.tx-g.x;g.x+=Math.sign(dx)*Math.min(6,Math.abs(dx));if(Math.abs(g.tx-g.x)<1){g.x=g.tx;g.mv=false}}}
+ if(ov(P,L.goal))win();
+}
+
+/* ===== BACKGROUNDS: a new theme every 10 levels (1-10 grid night, 11-20 sunset, 21-30 ocean, 31-40 neon city, 41-50 volcano) ===== */
+function drawBG(t,cam){
+ const th=[["#05050f","#0b0b24"],["#2a0a2e","#e0603a"],["#021428","#0a4a7a"],["#0a0420","#3a0a5a"],["#1a0404","#6a1408"],["#0a0222","#2a0a5a"]][t];
+ const g=ctx.createLinearGradient(0,0,0,VH);g.addColorStop(0,th[0]);g.addColorStop(1,th[1]);ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+ const r=i=>Math.abs(Math.sin(i*127.1)*43758.5453)%1,wrap=(v,m)=>((v%m)+m)%m;
+ if(t===0){ctx.strokeStyle="#14143a";ctx.lineWidth=1;for(let x=-(cam*.5%64);x<VW;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,VH);ctx.stroke()}for(let y=0;y<VH;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(VW,y);ctx.stroke()}
+  ctx.fillStyle="#9af";for(let i=0;i<30;i++)ctx.fillRect(wrap(r(i)*VW-cam*.1,VW),r(i+50)*VH*.8,2,2)}
+ else if(t===1){ctx.fillStyle="#ffb347";ctx.beginPath();ctx.arc(470,200,44,0,7);ctx.fill();
+  [[.2,"#4a1236",230,40],[.4,"#2a0a24",270,30]].forEach(([p,c,y,a])=>{ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(0,VH);for(let x=0;x<=VW;x+=16)ctx.lineTo(x,y+Math.sin((x+cam*p)/60)*a*.5);ctx.lineTo(VW,VH);ctx.fill()})}
+ else if(t===2){ctx.strokeStyle="#4cf6";ctx.lineWidth=1;for(let i=0;i<28;i++){const x=wrap(r(i)*VW-cam*.15*(1+r(i+9)),VW),y=VH-(frames*.4*(.5+r(i+3))+r(i+5)*VH)%VH;ctx.beginPath();ctx.arc(x,y,2+r(i+7)*4,0,7);ctx.stroke()}}
+ else if(t===3){for(let i=0;i<16;i++){const x=wrap(i*50-cam*.3,800)-80,h=60+r(i)*120;ctx.fillStyle="#1a0f3a";ctx.fillRect(x,VH-h,38,h);ctx.fillStyle="#f4a7";for(let y=VH-h+8;y<VH-8;y+=14)for(let w=0;w<2;w++)if(r(i*9+y+w)>.5)ctx.fillRect(x+7+w*14,y,6,6)}}
+ else if(t===5){for(let i=0;i<14;i++){const x=wrap(r(i)*VW-cam*(.1+r(i+4)*.2),VW),y=(r(i+9)*VH*.9+Math.sin(frames/40+i)*8),s=14+r(i+2)*26;ctx.fillStyle="#a4f2";ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s*.5,y);ctx.lineTo(x,y+s);ctx.lineTo(x-s*.5,y);ctx.fill();ctx.strokeStyle="#c8f6";ctx.stroke()}}
+ else{ctx.fillStyle="#f84";for(let i=0;i<34;i++){const x=wrap(r(i)*VW-cam*.2,VW),y=VH-(frames*.8*(.4+r(i+2))+r(i+7)*VH)%VH;ctx.fillRect(x,y,2,2)}
+  const gg=ctx.createLinearGradient(0,VH-60,0,VH);gg.addColorStop(0,"#f400");gg.addColorStop(1,"#f42a");ctx.fillStyle=gg;ctx.fillRect(0,VH-60,VW,60)}
+}
+
+/* ===== RENDER ===== */
+function drawSpikes(){L.spikes.forEach(k=>{
+ if(k.hid&&k.pop<.04){ctx.fillStyle=k.st===1?"#f33":"#ffffff14";const j=k.st===1?Math.random()*2-1:0;for(let x=k.x+4;x<k.x+k.w;x+=8)ctx.fillRect(x+j,k.y+k.h,2,2);return}
+ const p=k.hid?k.pop:1;ctx.fillStyle="#f33";
+ for(let x=k.x;x<k.x+k.w;x+=8){ctx.beginPath();if(k.dir===1){ctx.moveTo(x,k.y+k.h);ctx.lineTo(x+4,k.y+k.h-k.h*p);ctx.lineTo(x+8,k.y+k.h)}else{ctx.moveTo(x,k.y);ctx.lineTo(x+4,k.y+k.h*p);ctx.lineTo(x+8,k.y)}ctx.fill()}})}
+function drawSliders(){L.sliders.forEach(m=>{
+ ctx.fillStyle="#ffffff12";ctx.fillRect(m.hx-190,m.y+10,380,2);
+ const sh=m.st===1?Math.random()*3-1.5:0,fl=m.st===1&&Math.floor(frames/3)%2;
+ ctx.fillStyle=fl?"#fff":"#f33";ctx.fillRect(m.x+sh,m.y,m.w,m.h);ctx.fillStyle="#400";ctx.fillRect(m.x+sh+5,m.y+5,m.w-10,m.h-10);
+ ctx.fillStyle=fl?"#f33":"#fff";for(let y=m.y;y<m.y+m.h;y+=7){ctx.beginPath();ctx.moveTo(m.x,y);ctx.lineTo(m.x-6,y+3.5);ctx.lineTo(m.x,y+7);ctx.fill();ctx.beginPath();ctx.moveTo(m.x+m.w,y);ctx.lineTo(m.x+m.w+6,y+3.5);ctx.lineTo(m.x+m.w,y+7);ctx.fill()}
+ if(m.st===1){ctx.fillStyle="#ff0";ctx.font="bold 14px monospace";ctx.textAlign="center";ctx.fillText("!",m.x+11,m.y-6)}})}
+function draw(){
+ const acc=tcol(cur),cam=(camX+=(Math.max(0,Math.min(L.end-VW,P.x-VW*.35))-camX)*.15);
+ drawBG(Math.floor((cur-1)/10),cam);
+ 
+ ctx.save();const sx0=shake>0?(Math.random()-.5)*shake:0,sy0=shake>0?(Math.random()-.5)*shake:0;if(shake>0)shake=Math.max(0,shake-.6);ctx.translate(-Math.round(cam)+sx0,sy0);
+ L.zones.forEach(z=>{ctx.fillStyle="#a4f2";ctx.fillRect(z.x,z.y,z.w,z.h);ctx.fillStyle="#c8f";ctx.font="14px monospace";ctx.textAlign="center";for(let x=z.x+20;x<z.x+z.w;x+=40)for(let y=z.y+30;y<z.y+z.h;y+=50)ctx.fillText("↕",x,y)});
+ ctx.font="11px monospace";ctx.textAlign="left";ctx.fillStyle="#7a7aa0";L.tips.forEach(t=>ctx.fillText(t.t,t.x,t.y));
+ L.solids.forEach(r=>{if((!live(r)&&!(r.fake&&r.y<420))||r.x+r.w<cam||r.x>cam+VW)return;
+  let c=acc,ox=0;if(r.mv)c="#fd3";if(r.crumble){c="#fa5";if(r.st===1)ox=Math.random()*3-1.5}if((r.fake||r.vanish)&&r.st===1)ox=Math.random()*3*(r.vanish?1.6-r.t/120:1);if(r.vanish){c="#8ef";if(r.st===1&&r.t<40&&Math.floor(r.t/4)%2)c="#fff"}if(r.tramp)c="#f4a";if(r.ice)c="#aef";
+  ctx.fillStyle="#0e1422";ctx.fillRect(r.x+ox,r.y,r.w,r.h);ctx.fillStyle=c;ctx.fillRect(r.x+ox,r.y,r.w,3);
+  if(r.h>100||r.crumble||r.mv){ctx.fillRect(r.x+ox,r.y,2,Math.min(r.h,400));ctx.fillRect(r.x+r.w-2+ox,r.y,2,Math.min(r.h,400))}});
+ drawSpikes();drawSliders();drawBoss();drawChase();drawThings();
+ const g=L.goal,pu=Math.sin(frames/10)*3,gc=g.col||"#4f6";ctx.fillStyle=gc;ctx.shadowColor=gc;ctx.shadowBlur=14;ctx.fillRect(g.x,g.y-pu,g.w,g.h+pu);ctx.fillStyle="#0a2a14";ctx.fillRect(g.x+5,g.y+5,g.w-10,g.h-5);ctx.shadowBlur=0;
+ trail.forEach(t=>{ctx.fillStyle=`rgba(255,255,255,${t.t/20})`;ctx.fillRect(t.x,t.y,P.w,P.h);t.t--});trail=trail.filter(t=>t.t>0);
+ drawPlayer();
+ 
+ ctx.globalAlpha=1;
+ parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.t--;ctx.fillStyle="#f66";ctx.fillRect(p.x,p.y,3,3)});parts=parts.filter(p=>p.t>0);
+ ctx.restore();
+ drawHUD();drawTop();
+ 
+}
+
+/* ===== MAIN LOOP (fixed 60 Hz step) ===== */
+let last=performance.now(),acc=0;
+function loop(now){acc+=Math.min(100,now-last);last=now;
+ if(mode==="play"){while(acc>=16.67){step();acc-=16.67;if(mode!=="play")break}}else acc=0;
+ if(P)draw();requestAnimationFrame(loop)}
+claimRewards();drawMap();previewLoop();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
